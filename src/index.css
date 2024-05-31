@@ -1,0 +1,79 @@
+*, html {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica,
+    Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: hsl(0, 0%, 90%);
+}
+
+.zoom-toolbar {
+  position: fixed;
+  bottom: 10px;
+  right: 10px;
+  height: 32px;
+  width: 64px;
+  border-radius: 8px;
+  filter: drop-shadow(0px 0px 5px hsla(0, 0%, 20%, 0.50));
+}
+
+.name-bar {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  height: 32px;
+  /* width: 256px;
+  background-color: hsl(0, 0%, 0%, 25%);
+  border-radius: 8px; */
+  filter: drop-shadow(0px 0px 5px hsla(0, 0%, 20%, 0.50));
+}
+
+.toolbar {
+  position: fixed;
+  left: 10px;
+  top: 50%;
+  transform: translate(0%, -50%);
+  /* height: 300px; */
+  /* width: 32px; */
+  background-color: hsl(0, 0%, 0%, 25%);
+  border-radius: 8px;
+  filter: drop-shadow(0px 0px 5px hsla(0, 0%, 20%, 0.50));
+}
+
+.sim-controls-bar {
+  position: fixed;
+  bottom: 10px;
+  left: 50%;
+  transform: translate(-50%, 0%);
+  border-radius: 8px;
+  filter: drop-shadow(0px 0px 5px hsla(0, 0%, 20%, 0.50));
+}
+
+.notification-panel {
+  position: fixed;
+  right: 10px;
+  bottom: 64px;
+  height: 200px;
+  width: 250px;
+  background-color: hsl(0, 0%, 0%, 25%);
+  border-radius: 8px;
+  padding-top: 12px;
+  padding-left: 8px;
+  padding-right: 8px;
+  padding-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow: hidden;
+  overflow-y: auto;
+  filter: drop-shadow(0px 0px 5px hsla(0, 0%, 20%, 0.50));
+}
+
+.event-notification {
+  filter: drop-shadow(5px 5px 5px hsla(0, 0%, 30%, 0.50));
+}
