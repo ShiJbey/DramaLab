@@ -145,7 +145,7 @@ export class Stat {
 	get minValue(): number { return this._minValue; }
 	get maxValue(): number { return this._maxValue; }
 	get isDiscrete(): boolean { return this._isDiscrete; }
-	get normalizedValue(): number {
+	get normalized(): number {
 		if (this._isDirty) {
 			this.recalculateValue();
 		}
@@ -168,7 +168,7 @@ export class Stat {
 	removeModifier(modifier: StatModifier): boolean {
 		// Removes item at given index and success if there was at least
 		// one item removed.
-		const success = this._modifiers.splice(this._modifiers.indexOf(modifier)).length > 0;
+		const success = this._modifiers.splice(this._modifiers.indexOf(modifier), 1).length > 0;
 
 		if (success) {
 			this._isDirty = true;
@@ -184,7 +184,7 @@ export class Stat {
 		for (let i = this._modifiers.length - 1; i >= 0; i--) {
 			const modifier = this._modifiers[i];
 			if (modifier.source === source) {
-				this._modifiers.splice(i);
+				this._modifiers.splice(i, 1);
 				removedAnyModifier = true;
 				this._isDirty = true;
 			}

@@ -37,7 +37,7 @@ export class SocialEngine {
 		const agent = new Agent(this, uid, agentType);
 		this.agents.set(uid, agent);
 
-		this.db.Insert(`${uid}`);
+		this.db.insert(`${uid}`);
 
 		// Configure stats
 		for (const entry of schema.stats) {
@@ -85,7 +85,7 @@ export class SocialEngine {
 		owner.outgoingRelationships.set(target, relationship);
 		target.incomingRelationships.set(owner, relationship);
 
-		this.db.Insert(`${owner.uid}.relationships.${target.uid}`);
+		this.db.insert(`${owner.uid}.relationships.${target.uid}`);
 
 		// Set initial stats from schema
 		for (const entry of schema.stats) {
@@ -160,15 +160,52 @@ export class SocialEngine {
 	}
 
 	removeAgent(agentId: string): boolean {
-		return this.agents.delete(agentId);
+		const agent = this.agents.get(agentId);
+
+		if (agent === undefined) return false;
+
+		this.agents.delete(agentId);
+
+		// Need to cache the list first since we are removing while iterating
+		const outgoingRelationships = [...agent.outgoingRelationships.values()];
+		for (const relationship of outgoingRelationships) {
+			this.removeRelationship(relationship.owner.uid, relationship.target.uid);
+		}
+
+		// Same things
+		const incomingRelationships = [...agent.incomingRelationships.values()];
+		for (const relationship of incomingRelationships) {
+			this.removeRelationship(relationship.owner.uid, relationship.target.uid);
+		}
+
+		this.db.delete(`${agent.uid}`);
+
+		this.relationships.delete(agent.uid);
+
+		return true;
 	}
 
 	removeRelationship(ownerId: string, targetId: string): boolean {
-		const nestedMap = this.relationships.get(ownerId);
+		const relationshipMap = this.relationships.get(ownerId);
 
-		if (nestedMap === undefined) return false;
+		if (relationshipMap === undefined) return false;
 
-		return nestedMap.delete(targetId);
+		const relationship = relationshipMap.get(targetId);
+
+		if (relationship === undefined) return false;
+
+		for (const trait of relationship.traits.traits) {
+			relationship.removeTrait(trait.traitId);
+		}
+
+		relationship.owner.outgoingRelationships.delete(relationship.target);
+		relationship.target.incomingRelationships.delete(relationship.owner);
+
+		relationshipMap.delete(targetId);
+
+		this.db.delete(`${relationship.owner.uid}.relationships.${relationship.target.uid}`);
+
+		return true;
 	}
 
 	tick(): void {
@@ -217,11 +254,11 @@ export class SocialEngine {
 		// Get the event type definition from the library
 		const eventType = this.socialEventLibrary.getSocialEvent(`${eventName}/${agents.length}`);
 
-		const bindings: Record<string, object> = {};
+		const bindings: Record<string, unknown> = {};
 		for (let i = 0; i < eventType.roles.length; i++) {
 			const role = eventType.roles[i];
 			const agentID = agents[i];
-			bindings[role] = new String(agentID);
+			bindings[role] = agentID;
 		}
 
 		// Create the base context for the events
@@ -233,13 +270,13 @@ export class SocialEngine {
 
 		// Iterate through the responses
 		for (const response of eventType.responses) {
-			const results = new DBQuery(response.preconditions).Run(this.db, bindings);
+			const results = new DBQuery(response.preconditions).run(this.db, bindings);
 
 			// Skip this response because the query failed
-			if (!results.Success) continue;
+			if (!results.success) continue;
 
 			// Create a new context for each binding result
-			for (const bindingSet of results.Bindings) {
+			for (const bindingSet of results.bindings) {
 				const scopedCtx = ctx.withBindings(bindingSet);
 
 				if (response.description !== "") {

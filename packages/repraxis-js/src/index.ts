@@ -15,29 +15,29 @@ export enum NodeCardinality {
 export type NodeBindingsList = Map<string, INode>[];
 
 export interface INode {
-	GetNodeType(): NodeType;
-	GetSymbol(): string;
-	GetCardinality(): NodeCardinality;
-	GetChildren(): INode[];
-	GetParent(): INode | null;
-	GetRawValue(): unknown;
+	getNodeType(): NodeType;
+	getSymbol(): string;
+	getCardinality(): NodeCardinality;
+	getChildren(): INode[];
+	getParent(): INode | null;
+	getRawValue(): unknown;
 
-	EqualTo(other: INode): boolean;
-	NotEqualTo(other: INode): boolean;
-	GreaterThanEqualTo(other: INode): boolean;
-	GreaterThan(other: INode): boolean;
-	LessThan(other: INode): boolean;
-	LessThanEqualTo(other: INode): boolean;
+	equalTo(other: INode): boolean;
+	notEqualTo(other: INode): boolean;
+	greaterThanEqualTo(other: INode): boolean;
+	greaterThan(other: INode): boolean;
+	lessThan(other: INode): boolean;
+	lessThanEqualTo(other: INode): boolean;
 
-	AddChild(node: INode): void;
-	SetParent(node: INode | null): void;
-	RemoveChild(symbol: string): boolean;
-	GetChild(symbol: string): INode;
-	HasChild(symbol: string): boolean;
-	ClearChildren(): void;
+	addChild(node: INode): void;
+	setParent(node: INode | null): void;
+	removeChild(symbol: string): boolean;
+	getChild(symbol: string): INode;
+	hasChild(symbol: string): boolean;
+	clearChildren(): void;
 
-	GetPath(): string;
-	Copy(): INode;
+	getPath(): string;
+	copy(): INode;
 }
 
 export class NodeTypeError extends Error {
@@ -68,22 +68,22 @@ export abstract class Node<T> implements INode {
 		this._cardinality = cardinality;
 	}
 
-	abstract GetNodeType(): NodeType;
-	GetSymbol(): string { return this._symbol; }
-	GetCardinality(): NodeCardinality { return this._cardinality; }
-	GetChildren(): INode[] { return [...this._children.values()]; }
-	GetParent(): INode | null { return this._parent; }
-	GetRawValue(): unknown { return this._value; }
+	abstract getNodeType(): NodeType;
+	getSymbol(): string { return this._symbol; }
+	getCardinality(): NodeCardinality { return this._cardinality; }
+	getChildren(): INode[] { return [...this._children.values()]; }
+	getParent(): INode | null { return this._parent; }
+	getRawValue(): unknown { return this._value; }
 	GetValue(): T { return this._value; }
 
-	abstract EqualTo(other: INode): boolean;
-	abstract NotEqualTo(other: INode): boolean;
-	abstract GreaterThanEqualTo(other: INode): boolean;
-	abstract GreaterThan(other: INode): boolean;
-	abstract LessThan(other: INode): boolean;
-	abstract LessThanEqualTo(other: INode): boolean;
+	abstract equalTo(other: INode): boolean;
+	abstract notEqualTo(other: INode): boolean;
+	abstract greaterThanEqualTo(other: INode): boolean;
+	abstract greaterThan(other: INode): boolean;
+	abstract lessThan(other: INode): boolean;
+	abstract lessThanEqualTo(other: INode): boolean;
 
-	AddChild(node: INode): void {
+	addChild(node: INode): void {
 		if (this._cardinality === NodeCardinality.NONE) {
 			throw new Error(
 				"Cannot add child to node with cardinality NONE"
@@ -96,11 +96,11 @@ export abstract class Node<T> implements INode {
 			);
 		}
 
-		this._children.set(node.GetSymbol(), node);
-		node.SetParent(this);
+		this._children.set(node.getSymbol(), node);
+		node.setParent(this);
 	}
 
-	SetParent(node: INode | null): void {
+	setParent(node: INode | null): void {
 		if (this._parent !== null && node !== null) {
 			throw new Error("Node already has a parent.");
 		}
@@ -108,13 +108,13 @@ export abstract class Node<T> implements INode {
 		this._parent = node;
 	}
 
-	RemoveChild(symbol: string): boolean {
+	removeChild(symbol: string): boolean {
 
 		const child = this._children.get(symbol);
 
 		if (child !== undefined) {
 
-			child.SetParent(null);
+			child.setParent(null);
 
 			return this._children.delete(symbol);
 		}
@@ -122,7 +122,7 @@ export abstract class Node<T> implements INode {
 		return false;
 	}
 
-	GetChild(symbol: string): INode {
+	getChild(symbol: string): INode {
 		const child = this._children.get(symbol);
 
 		if (child !== undefined) {
@@ -132,33 +132,33 @@ export abstract class Node<T> implements INode {
 		throw new Error(`No child node found with symbol: ${symbol}`);
 	}
 
-	HasChild(symbol: string): boolean {
+	hasChild(symbol: string): boolean {
 		return this._children.has(symbol);
 	}
 
-	ClearChildren(): void {
+	clearChildren(): void {
 		for (const [, child] of this._children) {
-			child.SetParent(null);
-			child.ClearChildren();
+			child.setParent(null);
+			child.clearChildren();
 		}
 
 		this._children.clear();
 	}
 
 
-	GetPath(): string {
-		if (this._parent === null || this._parent.GetSymbol() === "root") {
+	getPath(): string {
+		if (this._parent === null || this._parent.getSymbol() === "root") {
 			return this._symbol;
 		}
 		else {
-			const parentCardinalityOp = this._parent.GetCardinality() === NodeCardinality.ONE ? "!" : ".";
-			return this._parent.GetPath() + parentCardinalityOp + Symbol;
+			const parentCardinalityOp = this._parent.getCardinality() === NodeCardinality.ONE ? "!" : ".";
+			return this._parent.getPath() + parentCardinalityOp + Symbol;
 		}
 	}
 
-	abstract Copy(): INode;
+	abstract copy(): INode;
 
-	ToString(): string { return this._symbol; }
+	toString(): string { return this._symbol; }
 }
 
 export class FloatNode extends Node<number> {
@@ -167,81 +167,81 @@ export class FloatNode extends Node<number> {
 		super(value.toPrecision(3), value, cardinality);
 	}
 
-	GetNodeType(): NodeType {
+	getNodeType(): NodeType {
 		return NodeType.FLOAT;
 	}
 
 
 
-	EqualTo(other: INode): boolean {
-		if (other.GetNodeType() !== this.GetNodeType()) return false;
+	equalTo(other: INode): boolean {
+		if (other.getNodeType() !== this.getNodeType()) return false;
 
 		return this._value === (other as FloatNode).GetValue();
 	}
 
-	NotEqualTo(other: INode): boolean {
-		if (other.GetNodeType() !== this.GetNodeType()) return true;
+	notEqualTo(other: INode): boolean {
+		if (other.getNodeType() !== this.getNodeType()) return true;
 
 		return this._value != (other as FloatNode).GetValue();
 	}
 
-	GreaterThanEqualTo(other: INode): boolean {
-		if (other.GetNodeType() != NodeType.INT && other.GetNodeType() != NodeType.FLOAT) {
+	greaterThanEqualTo(other: INode): boolean {
+		if (other.getNodeType() != NodeType.INT && other.getNodeType() != NodeType.FLOAT) {
 			throw new NodeTypeError(
-				`gte not defined between nodes of type ${this.GetNodeType()} and ${other.GetNodeType()}`
+				`gte not defined between nodes of type ${this.getNodeType()} and ${other.getNodeType()}`
 			);
 		}
 
-		if (other.GetNodeType() === NodeType.FLOAT) {
+		if (other.getNodeType() === NodeType.FLOAT) {
 			return this._value >= (other as FloatNode).GetValue();
 		}
 
 		return this._value >= (other as IntNode).GetValue();
 	}
 
-	LessThanEqualTo(other: INode): boolean {
-		if (other.GetNodeType() != NodeType.INT && other.GetNodeType() != NodeType.FLOAT) {
+	lessThanEqualTo(other: INode): boolean {
+		if (other.getNodeType() != NodeType.INT && other.getNodeType() != NodeType.FLOAT) {
 			throw new NodeTypeError(
-				`lte not defined between nodes of type ${this.GetNodeType()} and ${other.GetNodeType()}`
+				`lte not defined between nodes of type ${this.getNodeType()} and ${other.getNodeType()}`
 			);
 		}
 
-		if (other.GetNodeType() === NodeType.FLOAT) {
+		if (other.getNodeType() === NodeType.FLOAT) {
 			return this._value <= (other as FloatNode).GetValue();
 		}
 
 		return this._value <= (other as IntNode).GetValue();
 	}
 
-	LessThan(other: INode): boolean {
-		if (other.GetNodeType() != NodeType.INT && other.GetNodeType() != NodeType.FLOAT) {
+	lessThan(other: INode): boolean {
+		if (other.getNodeType() != NodeType.INT && other.getNodeType() != NodeType.FLOAT) {
 			throw new NodeTypeError(
-				`lt not defined between nodes of type ${this.GetNodeType()} and ${other.GetNodeType()}`
+				`lt not defined between nodes of type ${this.getNodeType()} and ${other.getNodeType()}`
 			);
 		}
 
-		if (other.GetNodeType() === NodeType.FLOAT) {
+		if (other.getNodeType() === NodeType.FLOAT) {
 			return this._value < (other as FloatNode).GetValue();
 		}
 
 		return this._value < (other as IntNode).GetValue();
 	}
 
-	GreaterThan(other: INode): boolean {
-		if (other.GetNodeType() != NodeType.INT && other.GetNodeType() != NodeType.FLOAT) {
+	greaterThan(other: INode): boolean {
+		if (other.getNodeType() != NodeType.INT && other.getNodeType() != NodeType.FLOAT) {
 			throw new NodeTypeError(
-				`gt not defined between nodes of type ${this.GetNodeType()} and ${other.GetNodeType()}`
+				`gt not defined between nodes of type ${this.getNodeType()} and ${other.getNodeType()}`
 			);
 		}
 
-		if (other.GetNodeType() === NodeType.FLOAT) {
+		if (other.getNodeType() === NodeType.FLOAT) {
 			return this._value > (other as FloatNode).GetValue();
 		}
 
 		return this._value > (other as IntNode).GetValue();
 	}
 
-	Copy(): INode {
+	copy(): INode {
 		return new FloatNode(this._value, this._cardinality);
 	}
 }
@@ -252,79 +252,79 @@ export class IntNode extends Node<number> {
 		super(Math.trunc(value).toString(), Math.trunc(value), cardinality);
 	}
 
-	GetNodeType(): NodeType {
+	getNodeType(): NodeType {
 		return NodeType.INT;
 	}
 
-	EqualTo(other: INode): boolean {
-		if (other.GetNodeType() !== this.GetNodeType()) return false;
+	equalTo(other: INode): boolean {
+		if (other.getNodeType() !== this.getNodeType()) return false;
 
 		return this._value === (other as IntNode).GetValue();
 	}
 
-	NotEqualTo(other: INode): boolean {
-		if (other.GetNodeType() !== this.GetNodeType()) return true;
+	notEqualTo(other: INode): boolean {
+		if (other.getNodeType() !== this.getNodeType()) return true;
 
 		return this._value != (other as IntNode).GetValue();
 	}
 
-	GreaterThanEqualTo(other: INode): boolean {
-		if (other.GetNodeType() != NodeType.INT && other.GetNodeType() != NodeType.FLOAT) {
+	greaterThanEqualTo(other: INode): boolean {
+		if (other.getNodeType() != NodeType.INT && other.getNodeType() != NodeType.FLOAT) {
 			throw new NodeTypeError(
-				`gte not defined between nodes of type ${this.GetNodeType()} and ${other.GetNodeType()}`
+				`gte not defined between nodes of type ${this.getNodeType()} and ${other.getNodeType()}`
 			);
 		}
 
-		if (other.GetNodeType() === NodeType.FLOAT) {
+		if (other.getNodeType() === NodeType.FLOAT) {
 			return this._value >= (other as FloatNode).GetValue();
 		}
 
 		return this._value >= (other as IntNode).GetValue();
 	}
 
-	LessThanEqualTo(other: INode): boolean {
-		if (other.GetNodeType() != NodeType.INT && other.GetNodeType() != NodeType.FLOAT) {
+	lessThanEqualTo(other: INode): boolean {
+		if (other.getNodeType() != NodeType.INT && other.getNodeType() != NodeType.FLOAT) {
 			throw new NodeTypeError(
-				`lte not defined between nodes of type ${this.GetNodeType()} and ${other.GetNodeType()}`
+				`lte not defined between nodes of type ${this.getNodeType()} and ${other.getNodeType()}`
 			);
 		}
 
-		if (other.GetNodeType() === NodeType.FLOAT) {
+		if (other.getNodeType() === NodeType.FLOAT) {
 			return this._value <= (other as FloatNode).GetValue();
 		}
 
 		return this._value <= (other as IntNode).GetValue();
 	}
 
-	LessThan(other: INode): boolean {
-		if (other.GetNodeType() != NodeType.INT && other.GetNodeType() != NodeType.FLOAT) {
+	lessThan(other: INode): boolean {
+		if (other.getNodeType() != NodeType.INT && other.getNodeType() != NodeType.FLOAT) {
 			throw new NodeTypeError(
-				`lt not defined between nodes of type ${this.GetNodeType()} and ${other.GetNodeType()}`
+				`lt not defined between nodes of type ${this.getNodeType()} and ${other.getNodeType()}`
 			);
 		}
 
-		if (other.GetNodeType() === NodeType.FLOAT) {
+		if (other.getNodeType() === NodeType.FLOAT) {
 			return this._value < (other as FloatNode).GetValue();
 		}
 
 		return this._value < (other as IntNode).GetValue();
 	}
 
-	GreaterThan(other: INode): boolean {
-		if (other.GetNodeType() != NodeType.INT && other.GetNodeType() != NodeType.FLOAT) {
+	greaterThan(other: INode): boolean {
+		if (other.getNodeType() != NodeType.INT && other.getNodeType() != NodeType.FLOAT) {
 			throw new NodeTypeError(
-				`gt not defined between nodes of type ${this.GetNodeType()} and ${other.GetNodeType()}`
+				`gt not defined between nodes of type ${this.getNodeType()} and ${other.getNodeType()}`
 			);
 		}
 
-		if (other.GetNodeType() === NodeType.FLOAT) {
+		if (other.getNodeType() === NodeType.FLOAT) {
 			return this._value > (other as FloatNode).GetValue();
 		}
 
 		return this._value > (other as IntNode).GetValue();
 	}
 
-	Copy(): INode {
+	copy(): INode {
 		return new IntNode(this._value, this._cardinality);
 	}
 }
@@ -335,26 +335,26 @@ export class SymbolNode extends Node<string> {
 		super(value, value, cardinality);
 	}
 
-	GetNodeType(): NodeType {
+	getNodeType(): NodeType {
 		return NodeType.SYMBOL;
 	}
 
-	EqualTo(other: INode): boolean {
-		if (other.GetNodeType() !== this.GetNodeType()) return false;
+	equalTo(other: INode): boolean {
+		if (other.getNodeType() !== this.getNodeType()) return false;
 
 		return this._value === (other as SymbolNode).GetValue();
 	}
 
-	NotEqualTo(other: INode): boolean {
-		if (other.GetNodeType() !== this.GetNodeType()) return true;
+	notEqualTo(other: INode): boolean {
+		if (other.getNodeType() !== this.getNodeType()) return true;
 
 		return this._value != (other as SymbolNode).GetValue();
 	}
 
-	GreaterThanEqualTo(other: INode): boolean {
-		if (other.GetNodeType() != this.GetNodeType()) {
+	greaterThanEqualTo(other: INode): boolean {
+		if (other.getNodeType() != this.getNodeType()) {
 			throw new NodeTypeError(
-				`gte not defined between nodes of type ${this.GetNodeType()} and ${other.GetNodeType()}`
+				`gte not defined between nodes of type ${this.getNodeType()} and ${other.getNodeType()}`
 			);
 		}
 
@@ -363,10 +363,10 @@ export class SymbolNode extends Node<string> {
 		return result >= 0;
 	}
 
-	LessThanEqualTo(other: INode): boolean {
-		if (other.GetNodeType() != this.GetNodeType()) {
+	lessThanEqualTo(other: INode): boolean {
+		if (other.getNodeType() != this.getNodeType()) {
 			throw new NodeTypeError(
-				`lte not defined between nodes of type ${this.GetNodeType()} and ${other.GetNodeType()}`
+				`lte not defined between nodes of type ${this.getNodeType()} and ${other.getNodeType()}`
 			);
 		}
 
@@ -375,10 +375,10 @@ export class SymbolNode extends Node<string> {
 		return result <= 0;
 	}
 
-	LessThan(other: INode): boolean {
-		if (other.GetNodeType() != this.GetNodeType()) {
+	lessThan(other: INode): boolean {
+		if (other.getNodeType() != this.getNodeType()) {
 			throw new NodeTypeError(
-				`lt not defined between nodes of type ${this.GetNodeType()} and ${other.GetNodeType()}`
+				`lt not defined between nodes of type ${this.getNodeType()} and ${other.getNodeType()}`
 			);
 		}
 
@@ -387,10 +387,10 @@ export class SymbolNode extends Node<string> {
 		return result < 0;
 	}
 
-	GreaterThan(other: INode): boolean {
-		if (other.GetNodeType() != this.GetNodeType()) {
+	greaterThan(other: INode): boolean {
+		if (other.getNodeType() != this.getNodeType()) {
 			throw new NodeTypeError(
-				`gt not defined between nodes of type ${this.GetNodeType()} and ${other.GetNodeType()}`
+				`gt not defined between nodes of type ${this.getNodeType()} and ${other.getNodeType()}`
 			);
 		}
 
@@ -399,7 +399,7 @@ export class SymbolNode extends Node<string> {
 		return result > 0;
 	}
 
-	Copy(): INode {
+	copy(): INode {
 		return new SymbolNode(this._value, this._cardinality);
 	}
 }
@@ -410,87 +410,87 @@ export class VariableNode extends Node<string> {
 		super(value, value, cardinality);
 	}
 
-	GetNodeType(): NodeType {
+	getNodeType(): NodeType {
 		return NodeType.VARIABLE;
 	}
 
-	EqualTo(other: INode): boolean {
-		if (other.GetNodeType() !== this.GetNodeType()) return false;
+	equalTo(other: INode): boolean {
+		if (other.getNodeType() !== this.getNodeType()) return false;
 
 		return this._value === (other as VariableNode).GetValue();
 	}
 
-	NotEqualTo(other: INode): boolean {
-		if (other.GetNodeType() !== this.GetNodeType()) return true;
+	notEqualTo(other: INode): boolean {
+		if (other.getNodeType() !== this.getNodeType()) return true;
 
 		return this._value != (other as VariableNode).GetValue();
 	}
 
-	GreaterThanEqualTo(other: INode): boolean {
+	greaterThanEqualTo(other: INode): boolean {
 		throw new NodeTypeError(
-			`gte not defined between nodes of type ${this.GetNodeType()} and ${other.GetNodeType()}`
+			`gte not defined between nodes of type ${this.getNodeType()} and ${other.getNodeType()}`
 		);
 	}
 
-	LessThanEqualTo(other: INode): boolean {
+	lessThanEqualTo(other: INode): boolean {
 		throw new NodeTypeError(
-			`lte not defined between nodes of type ${this.GetNodeType()} and ${other.GetNodeType()}`
+			`lte not defined between nodes of type ${this.getNodeType()} and ${other.getNodeType()}`
 		);
 	}
 
-	LessThan(other: INode): boolean {
+	lessThan(other: INode): boolean {
 		throw new NodeTypeError(
-			`lt not defined between nodes of type ${this.GetNodeType()} and ${other.GetNodeType()}`
+			`lt not defined between nodes of type ${this.getNodeType()} and ${other.getNodeType()}`
 		);
 	}
 
-	GreaterThan(other: INode): boolean {
+	greaterThan(other: INode): boolean {
 		throw new NodeTypeError(
-			`gt not defined between nodes of type ${this.GetNodeType()} and ${other.GetNodeType()}`
+			`gt not defined between nodes of type ${this.getNodeType()} and ${other.getNodeType()}`
 		);
 	}
 
-	Copy(): INode {
+	copy(): INode {
 		return new VariableNode(this._value, this._cardinality);
 	}
 }
 
-export function HasVariables(sentence: string): boolean {
-	return ParseSentence(sentence)
-		.filter(n => n.GetNodeType() === NodeType.VARIABLE)
+export function hasVariables(sentence: string): boolean {
+	return parseSentence(sentence)
+		.filter(n => n.getNodeType() === NodeType.VARIABLE)
 		.length > 0;
 }
 
-export function BindSentence(sentence: string, bindings: Map<string, INode>): string {
-	const nodes = ParseSentence(sentence);
+export function bindSentence(sentence: string, bindings: Map<string, INode>): string {
+	const nodes = parseSentence(sentence);
 
 	let finalSentence = "";
 
 	for (let i = 0; i < nodes.length; i++) {
 		const node = nodes[i];
 
-		if (node.GetNodeType() === NodeType.VARIABLE) {
-			const boundNode = bindings.get(node.GetSymbol());
+		if (node.getNodeType() === NodeType.VARIABLE) {
+			const boundNode = bindings.get(node.getSymbol());
 			if (boundNode !== undefined) {
-				finalSentence += boundNode.GetSymbol();
+				finalSentence += boundNode.getSymbol();
 			}
 			else {
-				finalSentence += node.GetSymbol();
+				finalSentence += node.getSymbol();
 			}
 		}
 		else {
-			finalSentence += node.GetSymbol();
+			finalSentence += node.getSymbol();
 		}
 
 		if (i < nodes.length - 1) {
-			finalSentence += node.GetCardinality() == NodeCardinality.ONE ? "!" : ".";
+			finalSentence += node.getCardinality() == NodeCardinality.ONE ? "!" : ".";
 		}
 	}
 
 	return finalSentence;
 }
 
-export function NodeFromString(token: string, cardinality: NodeCardinality): INode {
+export function nodeFromString(token: string, cardinality: NodeCardinality): INode {
 	if (token[0] == "?") {
 		return new VariableNode(token, cardinality);
 	}
@@ -508,15 +508,15 @@ export function NodeFromString(token: string, cardinality: NodeCardinality): INo
 	}
 }
 
-export function NodeFromAny(value: unknown): INode {
+export function nodeFromAny(value: unknown): INode {
 	const numericValue = Number(value);
 
 	if (!isNaN(numericValue)) {
 		if (Number.isInteger(numericValue)) {
-			return new IntNode(numericValue, NodeCardinality.NONE);
+			return new IntNode(value as number, NodeCardinality.NONE);
 		}
 		else {
-			return new FloatNode(numericValue, NodeCardinality.NONE);
+			return new FloatNode(value as number, NodeCardinality.NONE);
 		}
 	}
 
@@ -524,10 +524,14 @@ export function NodeFromAny(value: unknown): INode {
 		return new SymbolNode(value as string, NodeCardinality.NONE);
 	}
 
+	else if (value instanceof String) {
+		return new SymbolNode(value.toString(), NodeCardinality.NONE);
+	}
+
 	throw new Error(`Cannot convert (${value}) of type ${typeof value} to node`);
 }
 
-export function ParseSentence(sentence: string): INode[] {
+export function parseSentence(sentence: string): INode[] {
 	const nodes: INode[] = []
 
 	let currentToken = ""
@@ -543,7 +547,7 @@ export function ParseSentence(sentence: string): INode[] {
 		else if ((char === "!" || char === ".") && !processingLiteral) {
 			const cardinality = (char === "!") ? NodeCardinality.ONE : NodeCardinality.MANY;
 
-			nodes.push(NodeFromString(currentToken, cardinality))
+			nodes.push(nodeFromString(currentToken, cardinality))
 
 			currentToken = ""
 		}
@@ -556,7 +560,7 @@ export function ParseSentence(sentence: string): INode[] {
 		throw new Error(`Could not find closing ']' for value in: '${sentence}'`)
 	}
 
-	nodes.push(NodeFromString(currentToken, NodeCardinality.MANY))
+	nodes.push(nodeFromString(currentToken, NodeCardinality.MANY))
 
 	return nodes
 }
@@ -568,38 +572,38 @@ export class RePraxisDatabase {
 		this._root = new SymbolNode("root", NodeCardinality.MANY);
 	}
 
-	Insert(sentence: string): void {
-		const nodes = ParseSentence(sentence);
+	insert(sentence: string): void {
+		const nodes = parseSentence(sentence);
 
 		let subtree = this._root;
 
 		for (let i = 0; i < nodes.length; i++) {
-			const node = nodes[i].Copy();
+			const node = nodes[i].copy();
 
-			if (node.GetNodeType() == NodeType.VARIABLE) {
+			if (node.getNodeType() == NodeType.VARIABLE) {
 				throw new Error(
-					`Found variable ${node.GetSymbol()} in sentence '(${sentence})'. `
+					`Found variable ${node.getSymbol()} in sentence '(${sentence})'. `
 					+ "Sentence cannot contain variables when inserting a value."
 				);
 			}
 
-			if (!subtree.HasChild(node.GetSymbol())) {
-				if (subtree.GetCardinality() == NodeCardinality.ONE) {
+			if (!subtree.hasChild(node.getSymbol())) {
+				if (subtree.getCardinality() == NodeCardinality.ONE) {
 					// Replace the existing child
-					subtree.ClearChildren();
+					subtree.clearChildren();
 				}
 
-				subtree.AddChild(node);
+				subtree.addChild(node);
 				subtree = node;
 			}
 			else {
 				// We need to get the existing node, check cardinalities, and establish new
 				// nodes
-				const existingNode = subtree.GetChild(node.GetSymbol());
+				const existingNode = subtree.getChild(node.getSymbol());
 
-				if (existingNode.GetCardinality() != node.GetCardinality()) {
+				if (existingNode.getCardinality() != node.getCardinality()) {
 					throw new NodeCardinalityError(
-						`Cardinality mismatch on ${node.GetSymbol()} in sentence '${sentence}'.`
+						`Cardinality mismatch on ${node.getSymbol()} in sentence '${sentence}'.`
 					);
 				}
 
@@ -608,79 +612,79 @@ export class RePraxisDatabase {
 		}
 	}
 
-	Assert(sentence: string): boolean {
-		const nodes = ParseSentence(sentence);
+	assert(sentence: string): boolean {
+		const nodes = parseSentence(sentence);
 
 		let currentNode = this._root;
 
 		for (let i = 0; i < nodes.length; i++) {
 			const node = nodes[i];
 
-			if (node.GetNodeType() == NodeType.VARIABLE) {
+			if (node.getNodeType() == NodeType.VARIABLE) {
 				throw new NodeTypeError(
-					`Found variable ${node.GetSymbol()} in sentence.`
+					`Found variable ${node.getSymbol()} in sentence.`
 					+ "Sentence cannot contain variables when retrieving a value."
 				);
 			}
 
 			// Return early if there is not a corresponding node in the database
-			if (!currentNode.HasChild(node.GetSymbol())) return false;
+			if (!currentNode.hasChild(node.getSymbol())) return false;
 
 			// We can stop iterating since we don't care about the cardinality of the last node
 			if (i == nodes.length - 1) return true;
 
 			// Update the current node for a cardinality check
-			currentNode = currentNode.GetChild(node.GetSymbol());
+			currentNode = currentNode.getChild(node.getSymbol());
 
 			// The cardinalities of all intermediate nodes need to match
-			if (currentNode.GetCardinality() != node.GetCardinality()) return false;
+			if (currentNode.getCardinality() != node.getCardinality()) return false;
 		}
 
 		return true;
 	}
 
-	Delete(sentence: string): boolean {
-		const nodes = ParseSentence(sentence);
+	delete(sentence: string): boolean {
+		const nodes = parseSentence(sentence);
 
 		let currentNode = this._root;
 
 		// Loop until we get to the second to last node
 		for (let i = 0; i < nodes.length - 1; i++) {
 			const node = nodes[i];
-			currentNode = currentNode.GetChild(node.GetSymbol());
+			currentNode = currentNode.getChild(node.getSymbol());
 		}
 
 		// Get a reference to the final node in the sentence
 		const lastToken = nodes[nodes.length - 1];
 
 		// Remove the child
-		return currentNode.RemoveChild(lastToken.GetSymbol());
+		return currentNode.removeChild(lastToken.getSymbol());
 	}
 
-	Clear(): void {
-		this._root.ClearChildren();
+	clear(): void {
+		this._root.clearChildren();
 	}
 
-	GetRoot(): INode { return this._root; }
+	getRoot(): INode { return this._root; }
 }
 
 export class QueryState {
-	public success: boolean;
-	public bindings: Map<string, INode>[];
+	public readonly success: boolean;
+	public readonly bindings: Map<string, INode>[];
 
 	constructor(success: boolean, bindings: Map<string, INode>[]) {
 		this.success = success;
 		this.bindings = bindings.map(b => new Map(b));
 	}
 
-	ToResult(): QueryResult {
+	toResult(): QueryResult {
 		if (!this.success) return new QueryResult(false, []);
 
 		const results: Map<string, unknown>[] = this.bindings
 			.map((bindingMap) => {
 				return new Map(
 					[...bindingMap.entries()].map(([key, value]) => {
-						return [key, value.GetRawValue()]
+						return [key, value.getRawValue()]
 					})
 				);
 			});
@@ -690,20 +694,16 @@ export class QueryState {
 }
 
 export class QueryResult {
-	private _success: boolean;
-	private _bindings: Map<string, unknown>[];
-
+	public readonly success: boolean;
+	public readonly bindings: Map<string, unknown>[];
 
 	constructor(success: boolean, results: Map<string, unknown>[]) {
-		this._success = success;
-		this._bindings = results.map(entry => new Map(entry));
+		this.success = success;
+		this.bindings = results.map(entry => new Map(entry));
 	}
 
-	get Success(): boolean { return this._success; }
-	get Bindings(): Map<string, unknown>[] { return this._bindings; }
-
-	LimitToVars(variables: string[]): QueryResult {
-		if (!this._success) {
+	limitToVars(variables: string[]): QueryResult {
+		if (!this.success) {
 			return new QueryResult(false, []);
 		}
 
@@ -711,7 +711,7 @@ export class QueryResult {
 			return new QueryResult(true, []);
 		}
 
-		const filteredResults: Map<string, unknown>[] = this._bindings
+		const filteredResults: Map<string, unknown>[] = this.bindings
 			.map(bindingMap => {
 				return new Map(
 					[...bindingMap.entries()]
@@ -726,47 +726,39 @@ export class QueryResult {
 }
 
 export class QueryBindingContext {
-	private _bindings: Map<string, INode>;
-	private _subtree: INode;
+	public readonly bindings: Map<string, INode>;
+	public readonly subTree: INode;
 
 	constructor(bindings: Map<string, INode>, subtree: INode) {
-		this._bindings = bindings;
-		this._subtree = subtree;
-	}
-
-	get Bindings(): Map<string, INode> {
-		return this._bindings;
-	}
-
-	get SubTree(): INode {
-		return this._subtree;
+		this.bindings = bindings;
+		this.subTree = subtree;
 	}
 }
 
-export function Unify(database: RePraxisDatabase, sentence: string): Map<string, INode>[] {
+export function unify(database: RePraxisDatabase, sentence: string): Map<string, INode>[] {
 	let unified: QueryBindingContext[] = [
-		new QueryBindingContext(new Map(), database.GetRoot())
+		new QueryBindingContext(new Map(), database.getRoot())
 	];
 
-	const tokens = ParseSentence(sentence);
+	const tokens = parseSentence(sentence);
 
 	for (const token of tokens) {
 		const nextUnified: QueryBindingContext[] = [];
 
 		for (const entry of unified) {
-			for (const child of entry.SubTree.GetChildren()) {
-				if (token.GetNodeType() == NodeType.VARIABLE) {
+			for (const child of entry.subTree.getChildren()) {
+				if (token.getNodeType() == NodeType.VARIABLE) {
 					const unification = new QueryBindingContext(
-						new Map(entry.Bindings), child
+						new Map(entry.bindings), child
 					);
 
-					unification.Bindings.set(token.GetSymbol(), child);
+					unification.bindings.set(token.getSymbol(), child);
 
 					nextUnified.push(unification);
 				}
 				else {
-					if (token.GetSymbol() == child.GetSymbol()) {
-						nextUnified.push(new QueryBindingContext(entry.Bindings, child));
+					if (token.getSymbol() == child.getSymbol()) {
+						nextUnified.push(new QueryBindingContext(entry.bindings, child));
 					}
 				}
 			}
@@ -776,17 +768,17 @@ export function Unify(database: RePraxisDatabase, sentence: string): Map<string,
 	}
 
 	return unified
-		.map(entry => entry.Bindings)
+		.map(entry => entry.bindings)
 		.filter(binding => binding.size > 0)
 }
 
-export function UnifyAll(database: RePraxisDatabase, state: QueryState, sentences: string[]): Map<string, INode>[] {
+export function unifyAll(database: RePraxisDatabase, state: QueryState, sentences: string[]): Map<string, INode>[] {
 	let possibleBindings = [...state.bindings];
 
 
 	for (const sentence of sentences) {
 		const iterativeBindings: Map<string, INode>[] = [];
-		const newBindings: Map<string, INode>[] = Unify(database, sentence);
+		const newBindings: Map<string, INode>[] = unify(database, sentence);
 
 		if (possibleBindings.length === 0) {
 			for (const binding of newBindings) {
@@ -802,7 +794,7 @@ export function UnifyAll(database: RePraxisDatabase, state: QueryState, sentence
 						const newVal = binding.get(k)
 
 						if (oldVal !== undefined && newVal !== undefined) {
-							return !oldVal.EqualTo(newVal)
+							return !oldVal.equalTo(newVal)
 						}
 
 						throw new Error("Missing value in binding map.")
@@ -833,7 +825,7 @@ export function UnifyAll(database: RePraxisDatabase, state: QueryState, sentence
 }
 
 export interface IQueryExpression {
-	Evaluate(database: RePraxisDatabase, state: QueryState): QueryState;
+	evaluate(database: RePraxisDatabase, state: QueryState): QueryState;
 }
 
 export class AssertExpression implements IQueryExpression {
@@ -844,17 +836,17 @@ export class AssertExpression implements IQueryExpression {
 		this._statement = statement;
 	}
 
-	Evaluate(database: RePraxisDatabase, state: QueryState): QueryState {
-		if (HasVariables(this._statement)) {
-			const bindings = UnifyAll(database, state, [this._statement]);
+	evaluate(database: RePraxisDatabase, state: QueryState): QueryState {
+		if (hasVariables(this._statement)) {
+			const bindings = unifyAll(database, state, [this._statement]);
 
 			if (bindings.length == 0) return new QueryState(false, []);
 
 			const validBindings = bindings
 				.filter(
 					(binding) => {
-						return database.Assert(
-							BindSentence(this._statement, binding)
+						return database.assert(
+							bindSentence(this._statement, binding)
 						);
 					}
 				);
@@ -864,7 +856,7 @@ export class AssertExpression implements IQueryExpression {
 			return new QueryState(true, validBindings);
 		}
 
-		if (!database.Assert(this._statement)) return new QueryState(false, []);
+		if (!database.assert(this._statement)) return new QueryState(false, []);
 
 		return state;
 	}
@@ -879,9 +871,9 @@ export class EqualsExpression implements IQueryExpression {
 		this._rhValue = rhValue;
 	}
 
-	Evaluate(database: RePraxisDatabase, state: QueryState): QueryState {
-		const lhNodes = ParseSentence(this._lhValue);
-		const rhNodes = ParseSentence(this._rhValue);
+	evaluate(database: RePraxisDatabase, state: QueryState): QueryState {
+		const lhNodes = parseSentence(this._lhValue);
+		const rhNodes = parseSentence(this._rhValue);
 
 		if (lhNodes.length > 1) {
 			throw new Error(
@@ -901,7 +893,7 @@ export class EqualsExpression implements IQueryExpression {
 		// then the query has failed.
 		if (
 			state.bindings.length == 0
-			&& (HasVariables(this._lhValue) || HasVariables(this._rhValue))
+			&& (hasVariables(this._lhValue) || hasVariables(this._rhValue))
 		) {
 			return new QueryState(false, []);
 		}
@@ -910,15 +902,15 @@ export class EqualsExpression implements IQueryExpression {
 		// are equivalent.
 		const validBindings: NodeBindingsList = state.bindings
 			.filter((binding) => {
-				const leftNode = ParseSentence(
-					BindSentence(this._lhValue, binding)
+				const leftNode = parseSentence(
+					bindSentence(this._lhValue, binding)
 				)[0];
 
-				const rightNode = ParseSentence(
-					BindSentence(this._rhValue, binding)
+				const rightNode = parseSentence(
+					bindSentence(this._rhValue, binding)
 				)[0];
 
-				return leftNode.EqualTo(rightNode);
+				return leftNode.equalTo(rightNode);
 			});
 
 		if (validBindings.length == 0) {
@@ -938,9 +930,9 @@ export class GreaterThanEqualToExpression implements IQueryExpression {
 		this._rhValue = rhValue;
 	}
 
-	Evaluate(database: RePraxisDatabase, state: QueryState): QueryState {
-		const lhNodes = ParseSentence(this._lhValue);
-		const rhNodes = ParseSentence(this._rhValue);
+	evaluate(database: RePraxisDatabase, state: QueryState): QueryState {
+		const lhNodes = parseSentence(this._lhValue);
+		const rhNodes = parseSentence(this._rhValue);
 
 		if (lhNodes.length > 1) {
 			throw new Error(
@@ -960,7 +952,7 @@ export class GreaterThanEqualToExpression implements IQueryExpression {
 		// then the query has failed.
 		if (
 			state.bindings.length == 0
-			&& (HasVariables(this._lhValue) || HasVariables(this._rhValue))
+			&& (hasVariables(this._lhValue) || hasVariables(this._rhValue))
 		) {
 			return new QueryState(false, []);
 		}
@@ -969,15 +961,15 @@ export class GreaterThanEqualToExpression implements IQueryExpression {
 		// are equivalent.
 		const validBindings: NodeBindingsList = state.bindings
 			.filter((binding) => {
-				const leftNode = ParseSentence(
-					BindSentence(this._lhValue, binding)
+				const leftNode = parseSentence(
+					bindSentence(this._lhValue, binding)
 				)[0];
 
-				const rightNode = ParseSentence(
-					BindSentence(this._rhValue, binding)
+				const rightNode = parseSentence(
+					bindSentence(this._rhValue, binding)
 				)[0];
 
-				return leftNode.GreaterThanEqualTo(rightNode);
+				return leftNode.greaterThanEqualTo(rightNode);
 			});
 
 		if (validBindings.length == 0) {
@@ -997,9 +989,9 @@ export class GreaterThanExpression implements IQueryExpression {
 		this._rhValue = rhValue;
 	}
 
-	Evaluate(database: RePraxisDatabase, state: QueryState): QueryState {
-		const lhNodes = ParseSentence(this._lhValue);
-		const rhNodes = ParseSentence(this._rhValue);
+	evaluate(database: RePraxisDatabase, state: QueryState): QueryState {
+		const lhNodes = parseSentence(this._lhValue);
+		const rhNodes = parseSentence(this._rhValue);
 
 		if (lhNodes.length > 1) {
 			throw new Error(
@@ -1019,7 +1011,7 @@ export class GreaterThanExpression implements IQueryExpression {
 		// then the query has failed.
 		if (
 			state.bindings.length == 0
-			&& (HasVariables(this._lhValue) || HasVariables(this._rhValue))
+			&& (hasVariables(this._lhValue) || hasVariables(this._rhValue))
 		) {
 			return new QueryState(false, []);
 		}
@@ -1028,15 +1020,15 @@ export class GreaterThanExpression implements IQueryExpression {
 		// are equivalent.
 		const validBindings: NodeBindingsList = state.bindings
 			.filter((binding) => {
-				const leftNode = ParseSentence(
-					BindSentence(this._lhValue, binding)
+				const leftNode = parseSentence(
+					bindSentence(this._lhValue, binding)
 				)[0];
 
-				const rightNode = ParseSentence(
-					BindSentence(this._rhValue, binding)
+				const rightNode = parseSentence(
+					bindSentence(this._rhValue, binding)
 				)[0];
 
-				return leftNode.GreaterThan(rightNode);
+				return leftNode.greaterThan(rightNode);
 			});
 
 		if (validBindings.length == 0) {
@@ -1056,9 +1048,9 @@ export class LessThanEqualToExpression implements IQueryExpression {
 		this._rhValue = rhValue;
 	}
 
-	Evaluate(database: RePraxisDatabase, state: QueryState): QueryState {
-		const lhNodes = ParseSentence(this._lhValue);
-		const rhNodes = ParseSentence(this._rhValue);
+	evaluate(database: RePraxisDatabase, state: QueryState): QueryState {
+		const lhNodes = parseSentence(this._lhValue);
+		const rhNodes = parseSentence(this._rhValue);
 
 		if (lhNodes.length > 1) {
 			throw new Error(
@@ -1078,7 +1070,7 @@ export class LessThanEqualToExpression implements IQueryExpression {
 		// then the query has failed.
 		if (
 			state.bindings.length == 0
-			&& (HasVariables(this._lhValue) || HasVariables(this._rhValue))
+			&& (hasVariables(this._lhValue) || hasVariables(this._rhValue))
 		) {
 			return new QueryState(false, []);
 		}
@@ -1087,15 +1079,15 @@ export class LessThanEqualToExpression implements IQueryExpression {
 		// are equivalent.
 		const validBindings: NodeBindingsList = state.bindings
 			.filter((binding) => {
-				const leftNode = ParseSentence(
-					BindSentence(this._lhValue, binding)
+				const leftNode = parseSentence(
+					bindSentence(this._lhValue, binding)
 				)[0];
 
-				const rightNode = ParseSentence(
-					BindSentence(this._rhValue, binding)
+				const rightNode = parseSentence(
+					bindSentence(this._rhValue, binding)
 				)[0];
 
-				return leftNode.LessThanEqualTo(rightNode);
+				return leftNode.lessThanEqualTo(rightNode);
 			});
 
 		if (validBindings.length == 0) {
@@ -1115,9 +1107,9 @@ export class LessThanExpression implements IQueryExpression {
 		this._rhValue = rhValue;
 	}
 
-	Evaluate(database: RePraxisDatabase, state: QueryState): QueryState {
-		const lhNodes = ParseSentence(this._lhValue);
-		const rhNodes = ParseSentence(this._rhValue);
+	evaluate(database: RePraxisDatabase, state: QueryState): QueryState {
+		const lhNodes = parseSentence(this._lhValue);
+		const rhNodes = parseSentence(this._rhValue);
 
 		if (lhNodes.length > 1) {
 			throw new Error(
@@ -1137,7 +1129,7 @@ export class LessThanExpression implements IQueryExpression {
 		// then the query has failed.
 		if (
 			state.bindings.length == 0
-			&& (HasVariables(this._lhValue) || HasVariables(this._rhValue))
+			&& (hasVariables(this._lhValue) || hasVariables(this._rhValue))
 		) {
 			return new QueryState(false, []);
 		}
@@ -1146,15 +1138,15 @@ export class LessThanExpression implements IQueryExpression {
 		// are equivalent.
 		const validBindings: NodeBindingsList = state.bindings
 			.filter((binding) => {
-				const leftNode = ParseSentence(
-					BindSentence(this._lhValue, binding)
+				const leftNode = parseSentence(
+					bindSentence(this._lhValue, binding)
 				)[0];
 
-				const rightNode = ParseSentence(
-					BindSentence(this._rhValue, binding)
+				const rightNode = parseSentence(
+					bindSentence(this._rhValue, binding)
 				)[0];
 
-				return leftNode.LessThan(rightNode);
+				return leftNode.lessThan(rightNode);
 			});
 
 		if (validBindings.length == 0) {
@@ -1174,9 +1166,9 @@ export class NotEqualExpression implements IQueryExpression {
 		this._rhValue = rhValue;
 	}
 
-	Evaluate(database: RePraxisDatabase, state: QueryState): QueryState {
-		const lhNodes = ParseSentence(this._lhValue);
-		const rhNodes = ParseSentence(this._rhValue);
+	evaluate(database: RePraxisDatabase, state: QueryState): QueryState {
+		const lhNodes = parseSentence(this._lhValue);
+		const rhNodes = parseSentence(this._rhValue);
 
 		if (lhNodes.length > 1) {
 			throw new Error(
@@ -1196,7 +1188,7 @@ export class NotEqualExpression implements IQueryExpression {
 		// then the query has failed.
 		if (
 			state.bindings.length == 0
-			&& (HasVariables(this._lhValue) || HasVariables(this._rhValue))
+			&& (hasVariables(this._lhValue) || hasVariables(this._rhValue))
 		) {
 			return new QueryState(false, []);
 		}
@@ -1205,15 +1197,15 @@ export class NotEqualExpression implements IQueryExpression {
 		// are equivalent.
 		const validBindings: NodeBindingsList = state.bindings
 			.filter((binding) => {
-				const leftNode = ParseSentence(
-					BindSentence(this._lhValue, binding)
+				const leftNode = parseSentence(
+					bindSentence(this._lhValue, binding)
 				)[0];
 
-				const rightNode = ParseSentence(
-					BindSentence(this._rhValue, binding)
+				const rightNode = parseSentence(
+					bindSentence(this._rhValue, binding)
 				)[0];
 
-				return leftNode.NotEqualTo(rightNode);
+				return leftNode.notEqualTo(rightNode);
 			});
 
 		if (validBindings.length == 0) {
@@ -1231,13 +1223,13 @@ export class NotExpression implements IQueryExpression {
 		this._statement = statement;
 	}
 
-	Evaluate(database: RePraxisDatabase, state: QueryState): QueryState {
-		if (HasVariables(this._statement)) {
+	evaluate(database: RePraxisDatabase, state: QueryState): QueryState {
+		if (hasVariables(this._statement)) {
 			// If there are no existing bindings, then this is the first statement in the query
 			// or no previous statements contained variables.
 			if (state.bindings.length == 0) {
 				// We need to find bindings for all of the variables in this expression
-				const bindings = UnifyAll(database, state, [this._statement]);
+				const bindings = unifyAll(database, state, [this._statement]);
 
 				// If bindings for variables are found then we know this expression fails
 				// because we want to ensure that the statement is never true
@@ -1253,13 +1245,13 @@ export class NotExpression implements IQueryExpression {
 					(binding) => {
 						// Try to build a new sentence from the bindings and the expression's
 						// statement.
-						const sentence = BindSentence(this._statement, binding);
+						const sentence = bindSentence(this._statement, binding);
 
-						if (HasVariables(sentence)) {
+						if (hasVariables(sentence)) {
 							// Treat the new sentence like its first in the query
 							// and do a sub-unification, swapping out the state for an empty
 							// one without existing bindings
-							const scopedBindings = UnifyAll(
+							const scopedBindings = unifyAll(
 								database,
 								new QueryState(true, []),
 								[sentence]
@@ -1272,7 +1264,7 @@ export class NotExpression implements IQueryExpression {
 							return true;
 						}
 
-						return !database.Assert(sentence);
+						return !database.assert(sentence);
 					}
 				);
 
@@ -1281,7 +1273,7 @@ export class NotExpression implements IQueryExpression {
 			return new QueryState(true, validBindings);
 		}
 
-		if (database.Assert(this._statement)) return new QueryState(false, []);
+		if (database.assert(this._statement)) return new QueryState(false, []);
 
 		return state;
 	}
@@ -1298,11 +1290,11 @@ export class DBQuery {
 		}
 	}
 
-	Where(expression: string): DBQuery {
+	where(expression: string): DBQuery {
 		return new DBQuery([...this._expressions, expression]);
 	}
 
-	Run(db: RePraxisDatabase, bindings?: Record<string, unknown>[] | Record<string, unknown>): QueryResult {
+	run(db: RePraxisDatabase, bindings?: Record<string, unknown>[] | Record<string, unknown>): QueryResult {
 		// Convert input bindings to nodes
 		let convertedBindings: Map<string, INode>[] = []
 
@@ -1313,7 +1305,7 @@ export class DBQuery {
 						const nodeBindings = new Map<string, INode>();
 
 						for (const key of Object.keys(binding)) {
-							nodeBindings.set(key, NodeFromAny(binding[key]));
+							nodeBindings.set(key, nodeFromAny(binding[key]));
 						}
 
 						return nodeBindings;
@@ -1323,7 +1315,7 @@ export class DBQuery {
 				const nodeBindings = new Map<string, INode>();
 
 				for (const key of Object.keys(bindings)) {
-					nodeBindings.set(key, NodeFromAny(bindings[key]));
+					nodeBindings.set(key, nodeFromAny(bindings[key]));
 				}
 
 				convertedBindings.push(nodeBindings);
@@ -1343,13 +1335,13 @@ export class DBQuery {
 
 			// This is an assertion expression that may contain variables
 			if (expressionParts.length == 1) {
-				state = new AssertExpression(expressionParts[0]).Evaluate(db, state);
+				state = new AssertExpression(expressionParts[0]).evaluate(db, state);
 			}
 			// This is probably a not expression
 			else if (expressionParts.length == 2) {
 				if (expressionParts[0] == "not") {
 					// This is a "not x.y.z" expression
-					state = new NotExpression(expressionParts[1]).Evaluate(db, state);
+					state = new NotExpression(expressionParts[1]).evaluate(db, state);
 				}
 				else {
 					throw new Error(`Unrecognized query expression '${expressionStr}'.`);
@@ -1363,27 +1355,27 @@ export class DBQuery {
 				switch (comparisonOp) {
 					case "eq":
 						state = new EqualsExpression(expressionParts[1], expressionParts[2])
-							.Evaluate(db, state);
+							.evaluate(db, state);
 						break;
 					case "neq":
 						state = new NotEqualExpression(expressionParts[1], expressionParts[2])
-							.Evaluate(db, state);
+							.evaluate(db, state);
 						break;
 					case "lt":
 						state = new LessThanExpression(expressionParts[1], expressionParts[2])
-							.Evaluate(db, state);
+							.evaluate(db, state);
 						break;
 					case "gt":
 						state = new GreaterThanExpression(expressionParts[1], expressionParts[2])
-							.Evaluate(db, state);
+							.evaluate(db, state);
 						break;
 					case "lte":
 						state = new LessThanEqualToExpression(expressionParts[1], expressionParts[2])
-							.Evaluate(db, state);
+							.evaluate(db, state);
 						break;
 					case "gte":
 						state = new GreaterThanEqualToExpression(expressionParts[1], expressionParts[2])
-							.Evaluate(db, state);
+							.evaluate(db, state);
 						break;
 					default:
 						throw new Error(
@@ -1400,6 +1392,6 @@ export class DBQuery {
 			if (!state.success) break;
 		}
 
-		return state.ToResult();
+		return state.toResult();
 	}
 }

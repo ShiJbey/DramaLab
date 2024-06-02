@@ -92,7 +92,7 @@ export class Relationship implements ISocialEntity {
 		this._traits.addTrait(trait, description, duration);
 
 		// Update the traits listed in RePraxis database.
-		this._engine.db.Insert(
+		this._engine.db.insert(
 			`${this._owner.uid}.relationships.${this._target.uid}.traits.{traitID}`
 		);
 
@@ -111,12 +111,12 @@ export class Relationship implements ISocialEntity {
 
 		if (this._relationshipType == trait) {
 			this._relationshipType = null;
-			this._engine.db.Delete(
+			this._engine.db.delete(
 				`${this._owner.uid}.relationships.${this._target.uid}.type!${traitId}`
 			);
 		}
 
-		this._engine.db.Delete(
+		this._engine.db.delete(
 			`${this._owner.uid}.relationships.${this._target.uid}.traits.${traitId}`
 		);
 
@@ -126,14 +126,14 @@ export class Relationship implements ISocialEntity {
 		return true;
 	}
 
-	SetRelationshipType(traitId: string): void {
+	setRelationshipType(traitId: string): void {
 		if (this._relationshipType != null) {
 			this.removeTrait(this._relationshipType.traitId);
 		}
 
 		const trait = this._engine.traitLibrary.getTrait(traitId);
 		this._relationshipType = trait;
-		this._engine.db.Insert(
+		this._engine.db.insert(
 			`${this._owner.uid}.relationships.${this._target.uid}.type!${traitId}`
 		);
 
@@ -164,12 +164,12 @@ export class Relationship implements ISocialEntity {
 		this._activeSocialRules = [];
 
 		for (const rule of this._engine.socialRules) {
-			const results = new DBQuery(rule.preconditions).Run(
+			const results = new DBQuery(rule.preconditions).run(
 				this._engine.db,
 				{ "?owner": this._owner.uid, "?target": this._target.uid },
 			);
 
-			if (!results.Success) continue;
+			if (!results.success) continue;
 
 			rule.applyModifiers(this);
 

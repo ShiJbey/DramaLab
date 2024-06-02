@@ -3,10 +3,10 @@ import { SocialEngine } from "./SocialEngine";
 export class EffectContext {
 
 	private _descriptionTemplate: string;
-	private _bindings: Map<string, object>;
+	private _bindings: Map<string, unknown>;
 	private _engine: SocialEngine;
 
-	constructor(engine: SocialEngine, descriptionTemplate: string, bindings: Map<string, object>) {
+	constructor(engine: SocialEngine, descriptionTemplate: string, bindings: Map<string, unknown>) {
 		this._engine = engine;
 		this._descriptionTemplate = descriptionTemplate;
 		this._bindings = new Map(bindings);
@@ -16,7 +16,7 @@ export class EffectContext {
 		return this._engine;
 	}
 
-	get bindings(): Map<string, object> {
+	get bindings(): Map<string, unknown> {
 		return this._bindings;
 	}
 
@@ -97,5 +97,5 @@ export interface IEffect {
 export interface IEffectFactory {
 	get effectName(): string;
 
-	createInstance(context: EffectContext, args: string[]): IEffect;
+	createInstance(ctx: EffectContext, args: string[]): IEffect;
 }

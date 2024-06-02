@@ -78,7 +78,7 @@ export class Agent implements ISocialEntity {
 
 		this._traits.addTrait(trait, description, duration);
 
-		this._engine.db.Insert(`${this.uid}.traits.${traitId}`);
+		this._engine.db.insert(`${this.uid}.traits.${traitId}`);
 
 		this.reevaluateRelationships();
 
@@ -90,7 +90,7 @@ export class Agent implements ISocialEntity {
 
 		this.traits.removeTrait(traitId);
 
-		this.engine.db.Delete(`${this.uid}.traits.${traitId}`);
+		this.engine.db.delete(`${this.uid}.traits.${traitId}`);
 
 		this.reevaluateRelationships();
 
