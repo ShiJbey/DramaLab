@@ -1,7 +1,12 @@
 {
-  "name": "tdrs-js",
+  "name": "@dramalab/tdrs-js",
   "version": "1.0.0",
   "main": "index.js",
   "license": "MIT",
-  "private": true
+  "private": true,
+  "dependencies": {
+    "js-yaml": "^4.1.0",
+    "rxjs": "^7.8.1",
+    "@dramalab/repraxis-js": "1.0.0"
+  }
 }

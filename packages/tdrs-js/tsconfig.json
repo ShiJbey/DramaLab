@@ -21,5 +21,8 @@
     "alwaysStrict": true,
     // "skipDefaultLibCheck": true,
     "skipLibCheck": true
-  }
+  },
+  "references": [
+    {"path": "../repraxis-js"}
+  ]
 }

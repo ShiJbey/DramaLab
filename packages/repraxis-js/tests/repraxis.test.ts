@@ -1,10 +1,10 @@
-import { describe, expect, test, beforeEach } from "@jest/globals";
+import { describe, expect, test, beforeAll } from "@jest/globals";
 import { DBQuery, RePraxisDatabase } from "../src";
 
 const _db = new RePraxisDatabase();
 
 
-beforeEach(() => {
+beforeAll(() => {
 
 	_db.Insert("astrid.relationships.jordan.reputation!30");
 	_db.Insert("astrid.relationships.jordan.tags.rivalry");

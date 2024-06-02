@@ -36,7 +36,6 @@ export interface INode {
 	HasChild(symbol: string): boolean;
 	ClearChildren(): void;
 
-
 	GetPath(): string;
 	Copy(): INode;
 }
@@ -171,6 +170,8 @@ export class FloatNode extends Node<number> {
 	GetNodeType(): NodeType {
 		return NodeType.FLOAT;
 	}
+
+
 
 	EqualTo(other: INode): boolean {
 		if (other.GetNodeType() !== this.GetNodeType()) return false;
@@ -675,14 +676,14 @@ export class QueryState {
 	ToResult(): QueryResult {
 		if (!this.success) return new QueryResult(false, []);
 
-		const results: Map<string, unknown>[] = [];
-
-		for (let i = 0; i < this.bindings.length; i++) {
-			results[i] = new Map<string, object>();
-			for (const [varName, node] of this.bindings[i]) {
-				results[i].set(varName, node.GetRawValue());
-			}
-		}
+		const results: Map<string, unknown>[] = this.bindings
+			.map((bindingMap) => {
+				return new Map(
+					[...bindingMap.entries()].map(([key, value]) => {
+						return [key, value.GetRawValue()]
+					})
+				);
+			});
 
 		return new QueryResult(true, results);
 	}
@@ -710,15 +711,15 @@ export class QueryResult {
 			return new QueryResult(true, []);
 		}
 
-		const filteredResults: Map<string, unknown>[] = [];
-
-		for (let i = 0; i < this._bindings.length; i++) {
-			filteredResults[i] = new Map<string, unknown>();
-
-			for (const varName of variables) {
-				filteredResults[i].set(varName, this._bindings[i].get(varName));
-			}
-		}
+		const filteredResults: Map<string, unknown>[] = this._bindings
+			.map(bindingMap => {
+				return new Map(
+					[...bindingMap.entries()]
+						.filter(([key,]) => {
+							return variables.includes(key)
+						})
+				);
+			});
 
 		return new QueryResult(true, filteredResults);
 	}
