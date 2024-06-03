@@ -93,4 +93,5 @@ out/
 
 # Regular build output
 dist/
-build/
+**/*/build/
+**/*/node_modules/
