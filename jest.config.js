@@ -4,6 +4,7 @@ module.exports = {
 	testEnvironment: 'node',
 	roots: [
 		"./packages/repraxis-js/tests",
-		"./packages/tdrs-js/tests"
+		"./packages/tdrs-js/tests",
+		"./packages/dramalab-core/tests"
 	]
 };

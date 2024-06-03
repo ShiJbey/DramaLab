@@ -5,12 +5,12 @@ describe("DramaLab Core", () => {
 	test("Add agent to simulation", () => {
 		const sim = new Simulation();
 
-		const agent = new Agent(sim, "Agent A");
+		const agent = new Agent(sim, "a", "Agent A");
 
-		expect(sim.agents.length).toBe(0);
+		expect(sim.agents.size).toBe(0);
 
-		sim.AddAgent(agent);
+		sim.addAgent(agent);
 
-		expect(sim.agents.length).toBe(1);
+		expect(sim.agents.size).toBe(1);
 	});
 });

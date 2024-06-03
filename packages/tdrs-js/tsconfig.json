@@ -3,13 +3,12 @@
     "target": "ES6",
     "module": "commonjs",
     "composite": true,
-    // "rootDir": "./src",
+    "rootDir": "./src",
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
     "outDir": "./build",
     "removeComments": true,
-    "sourceRoot": "./src",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,
@@ -24,5 +23,6 @@
   },
   "references": [
     {"path": "../repraxis-js"}
-  ]
+  ],
+  "exclude": ["node_modules", "tests", "build"]
 }

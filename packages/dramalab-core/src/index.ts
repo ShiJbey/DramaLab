@@ -1,3 +1,5 @@
+import { SocialEngine } from '@dramalab/tdrs-js';
+
 export class Entity {
 	private _uuid: string;
 
@@ -33,23 +35,19 @@ export class Agent {
 }
 
 export class Simulation {
-	public agents: Map<string, Agent>;
-	private _numAgents: number;
+	public readonly agents: Map<string, Agent>;
+	public readonly socialEngine: SocialEngine;
 
 	constructor() {
 		this.agents = new Map();
-		this._numAgents = 0;
+		this.socialEngine = new SocialEngine();
 	}
 
-	get NumAgents(): number {
-		return this._numAgents;
+	public addAgent(agent: Agent): void {
+		this.agents.set(agent.uid, agent);
 	}
 
-	public AddAgent(agent: Agent): void {
-		this.agents.push(agent);
-	}
-
-	public RemoveAgent(agent: Agent): void {
-		this.agents.remove;
+	public RemoveAgent(agentId: string): boolean {
+		return this.agents.delete(agentId);
 	}
 }
