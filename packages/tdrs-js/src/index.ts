@@ -7,4 +7,5 @@ export * from "./SocialEvent";
 export * from "./SocialRule";
 export * from "./Stats";
 export * from "./Traits";
+export * from "./Modifiers";
 export * from "./Defaults/Effects";

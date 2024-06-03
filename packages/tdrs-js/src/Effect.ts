@@ -1,37 +1,26 @@
+import { SocialEntity } from "./ISocialEntity";
 import { SocialEngine } from "./SocialEngine";
 
-export class EffectContext {
+export class EventEffectContext {
 
-	private _descriptionTemplate: string;
-	private _bindings: Map<string, unknown>;
-	private _engine: SocialEngine;
+	public descriptionTemplate: string;
+	public readonly bindings: Map<string, unknown>;
+	public readonly engine: SocialEngine;
 
-	constructor(engine: SocialEngine, descriptionTemplate: string, bindings: Map<string, unknown>) {
-		this._engine = engine;
-		this._descriptionTemplate = descriptionTemplate;
-		this._bindings = new Map(bindings);
-	}
-
-	get engine(): SocialEngine {
-		return this._engine;
-	}
-
-	get bindings(): Map<string, unknown> {
-		return this._bindings;
-	}
-
-	get descriptionTemplate(): string {
-		return this._descriptionTemplate;
-	}
-
-	set descriptionTemplate(value: string) {
-		this.descriptionTemplate = value;
+	constructor(
+		engine: SocialEngine,
+		descriptionTemplate: string,
+		bindings: Map<string, unknown>
+	) {
+		this.engine = engine;
+		this.descriptionTemplate = descriptionTemplate;
+		this.bindings = new Map(bindings);
 	}
 
 	get description(): string {
-		let description = this._descriptionTemplate;
+		let description = this.descriptionTemplate;
 
-		for (const [key, value] of this._bindings) {
+		for (const [key, value] of this.bindings) {
 			description = description.replace(
 				`[${key.substring(1)}]`, String(value));
 		}
@@ -39,14 +28,14 @@ export class EffectContext {
 		return description;
 	}
 
-	withBindings(bindings: Map<string, unknown>): EffectContext {
+	withBindings(bindings: Map<string, unknown>): EventEffectContext {
 		const updatedBindings = new Map(this.bindings);
 
 		for (const [key, value] of Object.entries(bindings)) {
 			updatedBindings.set(key, value);
 		}
 
-		const updatedContext = new EffectContext(
+		const updatedContext = new EventEffectContext(
 			this.engine,
 			this.descriptionTemplate,
 			updatedBindings
@@ -56,19 +45,19 @@ export class EffectContext {
 	}
 }
 
-export class EffectLibrary {
+export class EventEffectLibrary {
 
-	private _factories: Map<string, IEffectFactory>;
+	private _factories: Map<string, IEventEffectFactory>;
 
 	constructor() {
 		this._factories = new Map();
 	}
 
-	addEffectFactory(factory: IEffectFactory): void {
+	addEffectFactory(factory: IEventEffectFactory): void {
 		this._factories.set(factory.effectName, factory);
 	}
 
-	getEffectFactory(effectName: string): IEffectFactory {
+	getEffectFactory(effectName: string): IEventEffectFactory {
 		const factory = this._factories.get(effectName);
 
 		if (factory === undefined) throw new Error(`Cannot find effect factory for: ${effectName}`);
@@ -76,7 +65,7 @@ export class EffectLibrary {
 		return factory;
 	}
 
-	createInstance(ctx: EffectContext, effectString: string) {
+	createInstance(ctx: EventEffectContext, effectString: string) {
 		const effectParts = effectString.split(" ").map(s => s.trim());
 
 		const effectName = effectParts[0];
@@ -90,12 +79,20 @@ export class EffectLibrary {
 	}
 }
 
-export interface IEffect {
+export interface IEventEffect {
 	apply(): void;
 }
 
-export interface IEffectFactory {
+export interface IEventEffectFactory {
 	get effectName(): string;
 
-	createInstance(ctx: EffectContext, args: string[]): IEffect;
+	createInstance(ctx: EventEffectContext, args: string[]): IEventEffect;
+}
+
+/** Effect applied and removed when a trait is applied to an entity. */
+export interface ITraitEffect {
+	/** Apply the effect's changes. */
+	apply(entity: SocialEntity): void;
+	/** Undo the effect's changes. */
+	remove(entity: SocialEntity): void;
 }

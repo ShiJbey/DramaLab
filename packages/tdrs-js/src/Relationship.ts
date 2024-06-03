@@ -1,10 +1,9 @@
 import { Agent } from "./Agent";
-import { ISocialEntity } from "./ISocialEntity";
+import { SocialEntity } from "./ISocialEntity";
+import { Modifier, RelationshipModifier } from "./Modifiers";
 import { SocialEngine } from "./SocialEngine";
-import { SocialRule } from "./SocialRule";
-import { StatManager, StatSchema } from "./Stats";
-import { Trait, TraitManager, TraitType } from "./Traits";
-import { DBQuery } from "@dramalab/repraxis-js";
+import { StatSchema } from "./Stats";
+import { Trait, TraitType } from "./Traits";
 
 export class RelationshipSchema {
 
@@ -26,75 +25,67 @@ export class RelationshipSchema {
 	}
 }
 
-export class ActiveSocialRuleEntry {
-	public readonly rule: SocialRule;
-	public readonly description: string;
+export class Relationship extends SocialEntity {
 
-	constructor(rule: SocialRule, description: string) {
-		this.rule = rule;
-		this.description = description;
-	}
-}
-
-export class Relationship implements ISocialEntity {
-
-	private _activeSocialRules: ActiveSocialRuleEntry[];
-	private _engine: SocialEngine;
-	private _owner: Agent;
-	private _target: Agent;
-	private _traits: TraitManager;
-	private _stats: StatManager;
+	public readonly owner: Agent;
+	public readonly target: Agent;
 	private _relationshipType: Trait | null;
 
 	constructor(engine: SocialEngine, owner: Agent, target: Agent) {
-		this._engine = engine;
-		this._owner = owner;
-		this._target = target;
-		this._activeSocialRules = [];
-		this._traits = new TraitManager(this);
-		this._stats = new StatManager();
+		super(engine, `${owner.uid}_${target.uid}`)
+		this.owner = owner;
+		this.target = target;
 		this._relationshipType = null;
 	}
 
-	get engine(): SocialEngine { return this._engine; }
-	get owner(): Agent { return this._owner; }
-	get target(): Agent { return this._target; }
-	get traits(): TraitManager { return this._traits; }
-	get stats(): StatManager { return this._stats; }
 	get relationshipType(): Trait | null { return this._relationshipType; }
-	get activeSocialRules(): ActiveSocialRuleEntry[] { return this._activeSocialRules; }
 
 	addTrait(traitId: string, duration = -1, descriptionOverride = ""): boolean {
-		const trait = this._engine.traitLibrary.getTrait(traitId);
+		const trait = this.engine.traitLibrary.getTrait(traitId);
 
-		// Fail if relationship already has the trait
-		if (this._traits.hasTrait(traitId)) return false;
-
-		// Fail if we have a conflicting trait
-		if (this._traits.hasConflictingTrait(trait)) return false;
-
-		// Error if trait type is not correct
 		if (trait.traitType != TraitType.Relationship) {
 			throw new Error(
 				`Trait (${traitId}) and is not a relationship trait.`
 			);
 		}
 
+		if (!this.traits.canAddTrait(trait)) return false;
+
 		let description = trait.description
-			.replace("[owner]", this._owner.uid)
-			.replace("[target]", this._target.uid);
+			.replace("[owner]", this.owner.uid)
+			.replace("[target]", this.target.uid);
 
 		if (descriptionOverride != "") {
 			description = descriptionOverride;
 		}
 
-		// Add trait and apply effects.
-		this._traits.addTrait(trait, description, duration);
+		// Add trait
+		this.traits.addTrait(trait, description, duration);
+
+		// Apply trait modifiers
+		for (const modifier of trait.modifiers) {
+			if (modifier instanceof Modifier) {
+				const modifierCopy = modifier.copy();
+				modifierCopy.source = trait;
+				this.modifiers.add(modifierCopy);
+				modifierCopy.apply(this);
+			}
+			else if (modifier instanceof RelationshipModifier) {
+				throw new Error(
+					`Relationship trait (${traitId}) cannot contain relationship modifiers.`
+				);
+			}
+			else {
+				throw new Error(`Unhandled modifier type: ${typeof modifier}`)
+			}
+		}
 
 		// Update the traits listed in RePraxis database.
-		this._engine.db.insert(
-			`${this._owner.uid}.relationships.${this._target.uid}.traits.{traitID}`
+		this.engine.db.insert(
+			`${this.owner.uid}.relationships.${this.target.uid}.traits.{traitID}`
 		);
+
+		this._onTraitAdded.next({ trait: trait });
 
 		// Reevaluate social rules for this relationship incase any depend on the new trait.
 		this.reevaluateSocialRules();
@@ -103,22 +94,32 @@ export class Relationship implements ISocialEntity {
 	}
 
 	removeTrait(traitId: string): boolean {
-		if (!this._traits.hasTrait(traitId)) return false;
+		if (!this.traits.hasTrait(traitId)) return false;
 
-		this._traits.removeTrait(traitId);
+		const trait = this.engine.traitLibrary.getTrait(traitId);
 
-		const trait = this._engine.traitLibrary.getTrait(traitId);
+		this.traits.removeTrait(traitId);
 
 		if (this._relationshipType == trait) {
 			this._relationshipType = null;
-			this._engine.db.delete(
-				`${this._owner.uid}.relationships.${this._target.uid}.type!${traitId}`
+			this.engine.db.delete(
+				`${this.owner.uid}.relationships.${this.target.uid}.type!${traitId}`
 			);
 		}
 
-		this._engine.db.delete(
-			`${this._owner.uid}.relationships.${this._target.uid}.traits.${traitId}`
+		this.engine.db.delete(
+			`${this.owner.uid}.relationships.${this.target.uid}.traits.${traitId}`
 		);
+
+		for (const modifier of this.modifiers.modifiers) {
+			if (modifier.source == trait) {
+				modifier.remove(this);
+			}
+		}
+
+		this.modifiers.removeAllFromSource(this);
+
+		this._onTraitRemoved.next({ trait: trait });
 
 		// Reevaluate social rules for this relationship incase any depend on the removed trait.
 		this.reevaluateSocialRules();
@@ -131,10 +132,10 @@ export class Relationship implements ISocialEntity {
 			this.removeTrait(this._relationshipType.traitId);
 		}
 
-		const trait = this._engine.traitLibrary.getTrait(traitId);
+		const trait = this.engine.traitLibrary.getTrait(traitId);
 		this._relationshipType = trait;
-		this._engine.db.insert(
-			`${this._owner.uid}.relationships.${this._target.uid}.type!${traitId}`
+		this.engine.db.insert(
+			`${this.owner.uid}.relationships.${this.target.uid}.type!${traitId}`
 		);
 
 		this.addTrait(traitId);
@@ -151,40 +152,66 @@ export class Relationship implements ISocialEntity {
 			instance.tick();
 
 			if (instance.hasDuration && instance.duration <= 0) {
-				this.removeTrait(instance.traitId);
+				this.removeTrait(instance.trait.traitId);
 			}
 		}
 	}
 
 	reevaluateSocialRules(): void {
-		for (const entry of this._activeSocialRules) {
-			entry.rule.removeModifiers(this);
+		// Check all the target's incoming relationship modifiers
+		for (const entry of this.owner.relationshipModifiers.modifiers) {
+			if (entry instanceof RelationshipModifier) {
+				if (entry.direction != "incoming") continue;
+
+				//  Remove all effects and remove them from the collection.
+				for (const modifier of this.modifiers.modifiers) {
+					if (modifier.source == entry) {
+						modifier.remove(this);
+					}
+				}
+				this.modifiers.removeAllFromSource(entry);
+
+				// check if the modifier is valid
+				const isValid = entry.checkPreconditions(this);
+
+				// (2) Remove it if not (or don't add it)
+				if (isValid) {
+					for (const subModifier of entry.modifiers) {
+						const subModifierCopy = subModifier.copy();
+						subModifierCopy.source = entry;
+						this.modifiers.add(subModifierCopy);
+						subModifierCopy.apply(this);
+					}
+				}
+			}
 		}
 
-		this._activeSocialRules = [];
+		// Check all the owner's outgoing relationship modifiers
+		for (const entry of this.owner.relationshipModifiers.modifiers) {
+			if (entry instanceof RelationshipModifier) {
+				if (entry.direction != "outgoing") continue;
 
-		for (const rule of this._engine.socialRules) {
-			const results = new DBQuery(rule.preconditions).run(
-				this._engine.db,
-				{ "?owner": this._owner.uid, "?target": this._target.uid },
-			);
+				//  Remove all effects and remove them from the collection.
+				for (const modifier of this.modifiers.modifiers) {
+					if (modifier.source == entry) {
+						modifier.remove(this);
+					}
+				}
+				this.modifiers.removeAllFromSource(entry);
 
-			if (!results.success) continue;
+				// check if the modifier is valid
+				const isValid = entry.checkPreconditions(this);
 
-			rule.applyModifiers(this);
-
-			this._activeSocialRules.push(
-				new ActiveSocialRuleEntry(
-					rule,
-					rule.description
-						.replace("[owner]", this._owner.uid)
-						.replace("[target]", this._target.uid)
-				)
-			);
+				// (2) Remove it if not (or don't add it)
+				if (isValid) {
+					for (const subModifier of entry.modifiers) {
+						const subModifierCopy = subModifier.copy();
+						subModifierCopy.source = entry;
+						this.modifiers.add(subModifierCopy);
+						subModifierCopy.apply(this);
+					}
+				}
+			}
 		}
-	}
-
-	toString(): string {
-		return `Relationship(${this._owner.uid}, ${this._target.uid})`;
 	}
 }

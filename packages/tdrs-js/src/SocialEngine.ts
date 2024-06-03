@@ -1,5 +1,5 @@
 import { Agent, AgentSchema } from "./Agent";
-import { EffectContext, EffectLibrary } from "./Effect";
+import { EventEffectContext, EventEffectLibrary } from "./Effect";
 import { Relationship, RelationshipSchema } from "./Relationship";
 import { SocialEventLibrary } from "./SocialEvent";
 import { SocialRule } from "./SocialRule";
@@ -10,7 +10,7 @@ import { RePraxisDatabase, DBQuery } from "@dramalab/repraxis-js";
 export class SocialEngine {
 	public readonly traitLibrary: TraitLibrary;
 	public readonly socialRules: SocialRule[];
-	public readonly effectLibrary: EffectLibrary;
+	public readonly effectLibrary: EventEffectLibrary;
 	public readonly socialEventLibrary: SocialEventLibrary;
 	public readonly db: RePraxisDatabase;
 	public readonly agents: Map<string, Agent>;
@@ -22,7 +22,7 @@ export class SocialEngine {
 		this.traitLibrary = new TraitLibrary();
 		this.db = new RePraxisDatabase();
 		this.socialRules = [];
-		this.effectLibrary = new EffectLibrary();
+		this.effectLibrary = new EventEffectLibrary();
 		this.socialEventLibrary = new SocialEventLibrary();
 		this.agents = new Map();
 		this.relationships = new Map();
@@ -262,7 +262,7 @@ export class SocialEngine {
 		}
 
 		// Create the base context for the events
-		const ctx = new EffectContext(
+		const ctx = new EventEffectContext(
 			this,
 			eventType.description,
 			new Map(Object.entries(bindings))

@@ -1,9 +1,9 @@
 import { Agent } from "../Agent";
-import { EffectContext, IEffect, IEffectFactory } from "../Effect";
+import { EventEffectContext, IEventEffect, IEventEffectFactory } from "../Effect";
 import { Relationship } from "../Relationship";
 import { StatModifier, StatModifierType } from "../Stats";
 
-export class AddAgentTrait implements IEffect {
+export class AddAgentTrait implements IEventEffect {
 
 	public readonly agent: Agent;
 	public readonly traitId: string;
@@ -27,11 +27,11 @@ export class AddAgentTrait implements IEffect {
 	}
 }
 
-export class AddAgentTraitFactory implements IEffectFactory {
+export class AddAgentTraitFactory implements IEventEffectFactory {
 
 	get effectName(): string { return "AddAgentTrait"; }
 
-	createInstance(ctx: EffectContext, args: string[]): IEffect {
+	createInstance(ctx: EventEffectContext, args: string[]): IEventEffect {
 		if (args.length < 2) {
 			const argStr = args.join(" ");
 
@@ -71,7 +71,7 @@ export class AddAgentTraitFactory implements IEffectFactory {
 	}
 }
 
-export class AddRelationshipTrait implements IEffect {
+export class AddRelationshipTrait implements IEventEffect {
 	public readonly relationship: Relationship;
 	public readonly traitId: string;
 	public readonly duration: number;
@@ -94,13 +94,13 @@ export class AddRelationshipTrait implements IEffect {
 	}
 }
 
-export class AddRelationshipTraitFactory implements IEffectFactory {
+export class AddRelationshipTraitFactory implements IEventEffectFactory {
 
 	get effectName(): string {
 		return "AddRelationshipTrait";
 	}
 
-	createInstance(ctx: EffectContext, args: string[]): IEffect {
+	createInstance(ctx: EventEffectContext, args: string[]): IEventEffect {
 		if (args.length < 3) {
 			const argStr = args.join(" ");
 			throw new Error(
@@ -144,7 +144,7 @@ export class AddRelationshipTraitFactory implements IEffectFactory {
 	}
 }
 
-export class AddAgentStatBuff implements IEffect {
+export class AddAgentStatBuff implements IEventEffect {
 	public readonly agent: Agent;
 	public readonly statName: string;
 	public readonly value: number;
@@ -171,12 +171,12 @@ export class AddAgentStatBuff implements IEffect {
 	}
 }
 
-export class AddAgentStatBuffFactory implements IEffectFactory {
+export class AddAgentStatBuffFactory implements IEventEffectFactory {
 	get effectName(): string {
 		return "AddAgentStatBuff";
 	}
 
-	createInstance(ctx: EffectContext, args: string[]): IEffect {
+	createInstance(ctx: EventEffectContext, args: string[]): IEventEffect {
 		if (args.length < 3) {
 			const argStr = args.join(" ");
 			throw new Error(
@@ -207,7 +207,7 @@ export class AddAgentStatBuffFactory implements IEffectFactory {
 	}
 }
 
-export class IncrementAgentBaseStat implements IEffect {
+export class IncrementAgentBaseStat implements IEventEffect {
 	public readonly agent: Agent;
 	public readonly statName: string;
 	public readonly value: number;
@@ -227,12 +227,12 @@ export class IncrementAgentBaseStat implements IEffect {
 	}
 }
 
-export class IncrementAgentBaseStatFactory implements IEffectFactory {
+export class IncrementAgentBaseStatFactory implements IEventEffectFactory {
 	get effectName(): string {
 		return "IncrementAgentBaseStat";
 	}
 
-	createInstance(ctx: EffectContext, args: string[]): IEffect {
+	createInstance(ctx: EventEffectContext, args: string[]): IEventEffect {
 		if (args.length < 3) {
 			const argStr = args.join(" ");
 			throw new Error(
@@ -263,7 +263,7 @@ export class IncrementAgentBaseStatFactory implements IEffectFactory {
 	}
 }
 
-export class IncreaseRelationshipStat implements IEffect {
+export class IncreaseRelationshipStat implements IEventEffect {
 	public readonly relationship: Relationship;
 	public readonly statName: string;
 	public readonly value: number;
@@ -283,12 +283,12 @@ export class IncreaseRelationshipStat implements IEffect {
 	}
 }
 
-export class IncreaseRelationshipStatFactory implements IEffectFactory {
+export class IncreaseRelationshipStatFactory implements IEventEffectFactory {
 	get effectName(): string {
 		return "IncreaseRelationshipStat";
 	}
 
-	createInstance(ctx: EffectContext, args: string[]): IEffect {
+	createInstance(ctx: EventEffectContext, args: string[]): IEventEffect {
 		if (args.length < 4) {
 			const argStr = args.join(" ");
 			throw new Error(
@@ -327,7 +327,7 @@ export class IncreaseRelationshipStatFactory implements IEffectFactory {
 	}
 }
 
-export class AddRelationshipStatBuff implements IEffect {
+export class AddRelationshipStatBuff implements IEventEffect {
 	public readonly relationship: Relationship;
 	public readonly statName: string;
 	public readonly value: number;
@@ -354,7 +354,7 @@ export class AddRelationshipStatBuff implements IEffect {
 	}
 }
 
-export class RemoveAgentTrait implements IEffect {
+export class RemoveAgentTrait implements IEventEffect {
 	public readonly agent: Agent;
 	public readonly traitId: string;
 
@@ -371,11 +371,11 @@ export class RemoveAgentTrait implements IEffect {
 	}
 }
 
-export class RemoveAgentTraitFactory implements IEffectFactory {
+export class RemoveAgentTraitFactory implements IEventEffectFactory {
 
 	get effectName(): string { return "AddAgentTrait"; }
 
-	createInstance(ctx: EffectContext, args: string[]): IEffect {
+	createInstance(ctx: EventEffectContext, args: string[]): IEventEffect {
 		if (args.length < 2) {
 			const argStr = args.join(" ");
 
@@ -401,7 +401,7 @@ export class RemoveAgentTraitFactory implements IEffectFactory {
 	}
 }
 
-export class RemoveRelationshipTrait implements IEffect {
+export class RemoveRelationshipTrait implements IEventEffect {
 	public readonly relationship: Relationship;
 	public readonly traitId: string;
 
@@ -418,13 +418,13 @@ export class RemoveRelationshipTrait implements IEffect {
 	}
 }
 
-export class RemoveRelationshipTraitFactory implements IEffectFactory {
+export class RemoveRelationshipTraitFactory implements IEventEffectFactory {
 
 	get effectName(): string {
 		return "RemoveRelationshipTrait";
 	}
 
-	createInstance(ctx: EffectContext, args: string[]): IEffect {
+	createInstance(ctx: EventEffectContext, args: string[]): IEventEffect {
 		if (args.length < 3) {
 			const argStr = args.join(" ");
 			throw new Error(

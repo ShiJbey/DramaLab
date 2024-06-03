@@ -1,16 +1,13 @@
-import { Subject } from "rxjs";
+import { Observable, Subject } from "rxjs";
 
 export class StatInitializer {
-	private _stat: string;
-	private _baseValue: number;
+	public readonly stat: string;
+	public readonly baseValue: number;
 
 	constructor(stat: string, baseValue: number) {
-		this._stat = stat;
-		this._baseValue = baseValue
+		this.stat = stat;
+		this.baseValue = baseValue
 	}
-
-	get stat(): string { return this._stat; }
-	get baseValue(): number { return this._baseValue; }
 }
 
 export enum StatModifierType {
@@ -21,11 +18,11 @@ export enum StatModifierType {
 
 export class StatSchema {
 
-	private _stat: string;
-	private _baseValue: number;
-	private _minValue: number;
-	private _maxValue: number;
-	private _isDiscrete: boolean;
+	public readonly stat: string;
+	public readonly baseValue: number;
+	public readonly minValue: number;
+	public readonly maxValue: number;
+	public readonly isDiscrete: boolean;
 
 	constructor(
 		stat: string,
@@ -34,43 +31,32 @@ export class StatSchema {
 		maxValue: number,
 		isDiscrete: boolean,
 	) {
-		this._stat = stat;
-		this._baseValue = baseValue;
-		this._minValue = minValue;
-		this._maxValue = maxValue;
-		this._isDiscrete = isDiscrete;
+		this.stat = stat;
+		this.baseValue = baseValue;
+		this.minValue = minValue;
+		this.maxValue = maxValue;
+		this.isDiscrete = isDiscrete;
 	}
-
-	get stat(): string { return this._stat; }
-	get baseValue(): number { return this._baseValue; }
-	get minValue(): number { return this._minValue; }
-	get maxValue(): number { return this._maxValue; }
-	get isDiscrete(): boolean { return this._isDiscrete; }
-
 }
 
 export class StatModifierData {
-	private _stat: string;
-	private _value: number;
-	private _modifierType: StatModifierType;
+	public readonly stat: string;
+	public readonly value: number;
+	public readonly modifierType: StatModifierType;
 
 	constructor(stat: string, value: number, modifierType: StatModifierType) {
-		this._stat = stat;
-		this._value = value;
-		this._modifierType = modifierType;
+		this.stat = stat;
+		this.value = value;
+		this.modifierType = modifierType;
 	}
-
-	get stat(): string { return this._stat; }
-	get value(): number { return this._value; }
-	get modifierType(): StatModifierType { return this._modifierType; }
 }
 
 export class StatModifier {
-	private _stat: string;
-	private _value: number;
-	private _modifierType: StatModifierType;
-	private _order: number;
-	private _source: object | null;
+	public readonly stat: string;
+	public readonly value: number;
+	public readonly modifierType: StatModifierType;
+	public readonly order: number;
+	public readonly source: object | null;
 
 	constructor(
 		stat: string,
@@ -79,18 +65,12 @@ export class StatModifier {
 		source: object | null = null,
 		order = -1,
 	) {
-		this._stat = stat;
-		this._value = value;
-		this._modifierType = modifierType;
-		this._order = (order < 0) ? modifierType : order;
-		this._source = source;
+		this.stat = stat;
+		this.value = value;
+		this.modifierType = modifierType;
+		this.order = (order < 0) ? modifierType : order;
+		this.source = source;
 	}
-
-	get stat(): string { return this._stat; }
-	get value(): number { return this._value; }
-	get modifierType(): StatModifierType { return this._modifierType; }
-	get order(): number { return this._order; }
-	get source(): object | null { return this._source; }
 }
 
 export const STAT_ROUND_PRECISION = 3;
@@ -110,7 +90,7 @@ export class Stat {
 	private _isDiscrete: boolean;
 	private _isDirty: boolean;
 
-	public readonly onValueChanged: Subject<StatValueChangedArgs>;
+	private readonly _onValueChanged: Subject<StatValueChangedArgs>;
 
 	constructor(
 		baseValue: number,
@@ -126,14 +106,17 @@ export class Stat {
 		this._minValue = minValue;
 		this._maxValue = maxValue;
 		this._normalizedValue = 0;
-		this.onValueChanged = new Subject();
+		this._onValueChanged = new Subject();
 	}
 
+	get onValueChanged(): Observable<StatValueChangedArgs> {
+		return this._onValueChanged.asObservable();
+	}
 	get baseValue(): number { return this._baseValue; }
 	set baseValue(value: number) {
 		this._baseValue = value;
 		this._isDirty = true;
-		this.onValueChanged.next({ value: this.value });
+		this._onValueChanged.next({ value: this.value });
 	}
 
 	get value(): number {
@@ -162,7 +145,7 @@ export class Stat {
 			return 1;
 		});
 		this._isDirty = true;
-		this.onValueChanged.next({ value: this.value });
+		this._onValueChanged.next({ value: this.value });
 	}
 
 	removeModifier(modifier: StatModifier): boolean {
@@ -172,7 +155,7 @@ export class Stat {
 
 		if (success) {
 			this._isDirty = true;
-			this.onValueChanged.next({ value: this.value });
+			this._onValueChanged.next({ value: this.value });
 		}
 
 		return success;
@@ -191,7 +174,7 @@ export class Stat {
 		}
 
 		if (removedAnyModifier) {
-			this.onValueChanged.next({ value: this.value });
+			this._onValueChanged.next({ value: this.value });
 		}
 
 		return removedAnyModifier;
@@ -246,7 +229,7 @@ export class Stat {
 
 export class StatManager {
 
-	private _stats: Map<string, Stat>;
+	private readonly _stats: Map<string, Stat>;
 
 	constructor() {
 		this._stats = new Map();

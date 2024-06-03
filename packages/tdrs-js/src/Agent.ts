@@ -1,68 +1,49 @@
-import { ISocialEntity } from "./ISocialEntity";
+import { SocialEntity } from "./ISocialEntity";
+import { Modifier, RelationshipModifier, ModifierCollection } from "./Modifiers";
 import { Relationship } from "./Relationship";
 import { SocialEngine } from "./SocialEngine";
-import { StatManager, StatSchema } from "./Stats";
-import { TraitManager, TraitType } from "./Traits";
+import { StatSchema } from "./Stats";
+import { TraitType } from "./Traits";
 
 
 export class AgentSchema {
-	private _agentType: string;
-	private _stats: StatSchema[];
-	private _traits: string[];
+	public readonly agentType: string;
+	public readonly stats: StatSchema[];
+	public readonly traits: string[];
 
 	constructor(
 		agentType: string,
 		stats: StatSchema[],
 		traits: string[],
 	) {
-		this._agentType = agentType;
-		this._stats = stats;
-		this._traits = traits;
+		this.agentType = agentType;
+		this.stats = stats;
+		this.traits = traits;
 	}
-
-	get agentType(): string { return this._agentType; }
-	get stats(): StatSchema[] { return this._stats; }
-	get traits(): string[] { return this._traits; }
 }
 
-export class Agent implements ISocialEntity {
-	private _uid: string;
-	private _agentType: string;
-	private _engine: SocialEngine;
-	private _traits: TraitManager;
-	private _stats: StatManager;
-	private _incomingRelationships: Map<Agent, Relationship>;
-	private _outgoingRelationships: Map<Agent, Relationship>;
+export class Agent extends SocialEntity {
+
+	public readonly agentType: string;
+	public readonly incomingRelationships: Map<Agent, Relationship>;
+	public readonly outgoingRelationships: Map<Agent, Relationship>;
+	public readonly relationshipModifiers: ModifierCollection;
 
 	constructor(
 		engine: SocialEngine,
 		uid: string,
 		agentType: string,
 	) {
-		this._uid = uid;
-		this._engine = engine;
-		this._agentType = agentType;
-		this._traits = new TraitManager(this);
-		this._stats = new StatManager();
-		this._incomingRelationships = new Map();
-		this._outgoingRelationships = new Map();
+		super(engine, uid);
+		this.agentType = agentType;
+		this.incomingRelationships = new Map();
+		this.outgoingRelationships = new Map();
+		this.relationshipModifiers = new ModifierCollection();
 	}
-
-	get uid(): string { return this._uid; }
-	get agentType(): string { return this._agentType; }
-	get engine(): SocialEngine { return this._engine; }
-	get traits(): TraitManager { return this._traits; }
-	get stats(): StatManager { return this._stats; }
-	get incomingRelationships(): Map<Agent, Relationship> { return this._incomingRelationships; }
-	get outgoingRelationships(): Map<Agent, Relationship> { return this._outgoingRelationships; }
 
 	addTrait(traitId: string, duration = -1, descriptionOverride = ""): boolean {
 
 		const trait = this.engine.traitLibrary.getTrait(traitId);
-
-		if (this._traits.hasTrait(traitId)) return false;
-
-		if (this._traits.hasConflictingTrait(trait)) return false;
 
 		if (trait.traitType != TraitType.Agent) {
 			throw new Error(
@@ -70,15 +51,34 @@ export class Agent implements ISocialEntity {
 			);
 		}
 
+		if (!this.traits.canAddTrait(trait)) return false;
+
 		let description = trait.description.replace("[owner]", this.uid);
 
 		if (descriptionOverride != "") {
 			description = descriptionOverride;
 		}
 
-		this._traits.addTrait(trait, description, duration);
+		this.traits.addTrait(trait, description, duration);
 
-		this._engine.db.insert(`${this.uid}.traits.${traitId}`);
+		for (const modifier of trait.modifiers) {
+			if (modifier instanceof Modifier) {
+				const modifierCopy = modifier.copy();
+				modifierCopy.source = trait;
+				this.modifiers.add(modifierCopy);
+				modifierCopy.apply(this);
+			}
+			else if (modifier instanceof RelationshipModifier) {
+				this.relationshipModifiers.add(modifier.copy());
+			}
+			else {
+				throw new Error(`Unhandled modifier type: ${typeof modifier}`)
+			}
+		}
+
+		this.engine.db.insert(`${this.uid}.traits.${traitId}`);
+
+		this._onTraitAdded.next({ trait: trait });
 
 		this.reevaluateRelationships();
 
@@ -88,9 +88,21 @@ export class Agent implements ISocialEntity {
 	removeTrait(traitId: string): boolean {
 		if (!this.traits.hasTrait(traitId)) return false;
 
+		const trait = this.engine.traitLibrary.getTrait(traitId);
+
 		this.traits.removeTrait(traitId);
 
 		this.engine.db.delete(`${this.uid}.traits.${traitId}`);
+
+		for (const modifier of this.modifiers.modifiers) {
+			if (modifier.source == trait) {
+				modifier.remove(this);
+			}
+		}
+
+		this.modifiers.removeAllFromSource(this);
+
+		this._onTraitRemoved.next({ trait: trait });
 
 		this.reevaluateRelationships();
 
@@ -102,6 +114,18 @@ export class Agent implements ISocialEntity {
 		this.reevaluateRelationships();
 	}
 
+	tickModifiers(): void {
+		const modifierInstances = [...this.modifiers.modifiers];
+
+		for (const modifier of modifierInstances) {
+			modifier.update(this);
+
+			if (modifier.hasExpired(this)) {
+				this.modifiers.remove(modifier);
+			}
+		}
+	}
+
 	tickTraits(): void {
 		const traitInstances = this.traits.traits;
 
@@ -109,23 +133,23 @@ export class Agent implements ISocialEntity {
 			instance.tick();
 
 			if (instance.hasDuration && instance.duration <= 0) {
-				this.removeTrait(instance.traitId);
+				this.removeTrait(instance.trait.traitId);
 			}
 		}
 	}
 
 	reevaluateRelationships(): void {
-		for (const relationship of this._outgoingRelationships.values()) {
+		for (const relationship of this.outgoingRelationships.values()) {
 			relationship.reevaluateSocialRules();
 		}
 
-		for (const relationship of this._incomingRelationships.values()) {
+		for (const relationship of this.incomingRelationships.values()) {
 			relationship.reevaluateSocialRules();
 		}
 	}
 
 	ReevaluateRelationship(target: Agent): void {
-		const relationship = this._outgoingRelationships.get(target);
+		const relationship = this.outgoingRelationships.get(target);
 
 		if (relationship === undefined) throw new Error(`Cannot find relationship from ${this.uid} to ${target.uid}`);
 
