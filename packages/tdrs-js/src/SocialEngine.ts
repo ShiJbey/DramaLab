@@ -2,14 +2,14 @@ import { Agent, AgentSchema } from "./Agent";
 import { EventEffectContext, EventEffectLibrary } from "./Effect";
 import { Relationship, RelationshipSchema } from "./Relationship";
 import { SocialEventLibrary } from "./SocialEvent";
-import { SocialRule } from "./SocialRule";
+import { SocialRule, SocialRuleLibrary } from "./SocialRule";
 import { Stat } from "./Stats";
 import { TraitLibrary } from "./Traits";
 import { RePraxisDatabase, DBQuery } from "@dramalab/repraxis-js";
 
 export class SocialEngine {
 	public readonly traitLibrary: TraitLibrary;
-	public readonly socialRules: SocialRule[];
+	public readonly socialRules: SocialRuleLibrary;
 	public readonly effectLibrary: EventEffectLibrary;
 	public readonly socialEventLibrary: SocialEventLibrary;
 	public readonly db: RePraxisDatabase;
@@ -21,7 +21,7 @@ export class SocialEngine {
 	constructor() {
 		this.traitLibrary = new TraitLibrary();
 		this.db = new RePraxisDatabase();
-		this.socialRules = [];
+		this.socialRules = new SocialRuleLibrary();
 		this.effectLibrary = new EventEffectLibrary();
 		this.socialEventLibrary = new SocialEventLibrary();
 		this.agents = new Map();
@@ -58,7 +58,7 @@ export class SocialEngine {
 	}
 
 	addSocialRule(socialRule: SocialRule): void {
-		this.socialRules.push(socialRule);
+		this.socialRules.addRule(socialRule);
 	}
 
 	addRelationship(ownerId: string, targetId: string): Relationship {
@@ -195,7 +195,7 @@ export class SocialEngine {
 		if (relationship === undefined) return false;
 
 		for (const trait of relationship.traits.traits) {
-			relationship.removeTrait(trait.traitId);
+			relationship.removeTrait(trait.trait.traitId);
 		}
 
 		relationship.owner.outgoingRelationships.delete(relationship.target);
