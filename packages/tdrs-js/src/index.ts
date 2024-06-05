@@ -9,3 +9,4 @@ export * from "./Stats";
 export * from "./Traits";
 export * from "./Modifiers";
 export * from "./Defaults/Effects";
+export * from "./Defaults/SocialEventEffects";

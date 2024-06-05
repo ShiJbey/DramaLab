@@ -31,7 +31,7 @@ export abstract class SocialEntity {
 		this.engine = engine;
 		this.traits = new TraitManager();
 		this.stats = new StatManager();
-		this.modifiers = new ModifierCollection();
+		this.modifiers = new ModifierCollection(this);
 		this._onTraitAdded = new Subject();
 		this._onTraitRemoved = new Subject();
 	}

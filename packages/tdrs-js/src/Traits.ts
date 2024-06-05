@@ -1,4 +1,4 @@
-import { IModifier } from "./Modifiers";
+import { IEffect } from "./Effect";
 
 export enum TraitType {
 	Agent = 0,
@@ -11,7 +11,7 @@ export class Trait {
 	public readonly name: string;
 	public readonly traitType: TraitType;
 	public readonly description: string;
-	public readonly modifiers: IModifier[];
+	public readonly effects: IEffect[];
 	public readonly conflictingTraits: Set<string>;
 
 	constructor(
@@ -19,14 +19,14 @@ export class Trait {
 		traitType: TraitType,
 		name: string,
 		description: string,
-		modifiers: IModifier[],
+		effects: IEffect[],
 		conflictingTraits: string[],
 	) {
 		this.traitId = traitId;
 		this.traitType = traitType;
 		this.name = name;
 		this.description = description;
-		this.modifiers = [...modifiers];
+		this.effects = [...effects];
 		this.conflictingTraits = new Set(conflictingTraits);
 	}
 }
@@ -57,8 +57,6 @@ export class TraitInstance {
 		}
 	}
 }
-
-
 
 export class TraitManager {
 

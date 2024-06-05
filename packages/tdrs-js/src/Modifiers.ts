@@ -1,5 +1,5 @@
 import { DBQuery } from "@dramalab/repraxis-js";
-import { EventEffectContext } from "./Effect";
+import { EventEffectContext, IEffect } from "./Effect";
 import { SocialEntity } from "./ISocialEntity";
 import { Relationship } from "./Relationship";
 
@@ -13,8 +13,6 @@ export interface IModifier {
 	remove(entity: SocialEntity): void;
 	/** Called every time step that the modifier is attached and not expired. */
 	update(entity: SocialEntity): void;
-	/** Make a copy of the modifier */
-	copy(): IModifier;
 	/** Get a description of what the modifier does. */
 	get description(): string;
 	/** Get the source of the modifier. */
@@ -35,7 +33,6 @@ export abstract class Modifier implements IModifier {
 	abstract apply(entity: SocialEntity): void;
 	abstract remove(entity: SocialEntity): void;
 	abstract update(entity: SocialEntity): void;
-	abstract copy(): IModifier;
 	abstract get description(): string;
 	get source(): object | null { return this._source; }
 	set source(value: object | null) { this._source = value; }
@@ -46,7 +43,7 @@ export class RelationshipModifier extends Modifier {
 	protected readonly _description: string;
 	public readonly direction: "incoming" | "outgoing";
 	public readonly preconditions: string[];
-	public readonly modifiers: Modifier[];
+	public readonly effects: IEffect[];
 	public readonly hasDuration: boolean;
 	protected _duration: number;
 
@@ -54,7 +51,7 @@ export class RelationshipModifier extends Modifier {
 		description: string,
 		preconditions: string[],
 		direction: "incoming" | "outgoing",
-		modifiers: Modifier[],
+		effects: IEffect[],
 		duration = -1,
 		source: object | null = null,
 	) {
@@ -62,7 +59,7 @@ export class RelationshipModifier extends Modifier {
 		this._description = description;
 		this.preconditions = preconditions;
 		this.direction = direction;
-		this.modifiers = modifiers;
+		this.effects = effects;
 		this.hasDuration = duration > 0;
 		this._duration = duration;
 	}
@@ -109,17 +106,6 @@ export class RelationshipModifier extends Modifier {
 		}
 	}
 
-	copy(): IModifier {
-		return new RelationshipModifier(
-			this._description,
-			[...this.preconditions],
-			this.direction,
-			[...this.modifiers],
-			this._duration,
-			this.source
-		)
-	}
-
 	get description(): string {
 		return this._description;
 	}
@@ -127,14 +113,17 @@ export class RelationshipModifier extends Modifier {
 
 /** Tracks a collection of active modifiers. */
 export class ModifierCollection {
+	public readonly owner: SocialEntity;
 	public readonly modifiers: IModifier[];
 
-	constructor() {
+	constructor(owner: SocialEntity) {
+		this.owner = owner;
 		this.modifiers = [];
 	}
 
 	add(modifier: IModifier): void {
 		this.modifiers.push(modifier);
+		modifier.apply(this.owner)
 	}
 
 	has(modifier: IModifier): boolean {
@@ -145,6 +134,10 @@ export class ModifierCollection {
 		const itemsRemoved = this.modifiers.splice(
 			this.modifiers.indexOf(modifier), 1
 		);
+
+		if (itemsRemoved.length > 0) {
+			itemsRemoved[0].remove(this.owner);
+		}
 
 		return (itemsRemoved.length > 0) ? itemsRemoved[0] : undefined;
 	}
@@ -157,6 +150,7 @@ export class ModifierCollection {
 			if (modifier.source === source) {
 				this.modifiers.splice(i, 1);
 				itemsRemoved.push(modifier);
+				modifier.remove(this.owner);
 			}
 		}
 

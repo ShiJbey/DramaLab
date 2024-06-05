@@ -62,22 +62,8 @@ export class Relationship extends SocialEntity {
 		// Add trait
 		this.traits.addTrait(trait, description, duration);
 
-		// Apply trait modifiers
-		for (const modifier of trait.modifiers) {
-			if (modifier instanceof Modifier) {
-				const modifierCopy = modifier.copy();
-				modifierCopy.source = trait;
-				this.modifiers.add(modifierCopy);
-				modifierCopy.apply(this);
-			}
-			else if (modifier instanceof RelationshipModifier) {
-				throw new Error(
-					`Relationship trait (${traitId}) cannot contain relationship modifiers.`
-				);
-			}
-			else {
-				throw new Error(`Unhandled modifier type: ${typeof modifier}`)
-			}
+		for (const effect of trait.effects) {
+			effect.apply(this);
 		}
 
 		// Update the traits listed in RePraxis database.
@@ -100,6 +86,10 @@ export class Relationship extends SocialEntity {
 
 		this.traits.removeTrait(traitId);
 
+		for (const effect of trait.effects) {
+			effect.remove(this);
+		}
+
 		if (this._relationshipType == trait) {
 			this._relationshipType = null;
 			this.engine.db.delete(
@@ -110,14 +100,6 @@ export class Relationship extends SocialEntity {
 		this.engine.db.delete(
 			`${this.owner.uid}.relationships.${this.target.uid}.traits.${traitId}`
 		);
-
-		for (const modifier of this.modifiers.modifiers) {
-			if (modifier.source == trait) {
-				modifier.remove(this);
-			}
-		}
-
-		this.modifiers.removeAllFromSource(this);
 
 		this._onTraitRemoved.next({ trait: trait });
 
@@ -143,6 +125,8 @@ export class Relationship extends SocialEntity {
 
 	tick(): void {
 		this.tickTraits();
+		this.tickModifiers();
+		this.reevaluateSocialRules();
 	}
 
 	tickTraits(): void {
@@ -157,30 +141,33 @@ export class Relationship extends SocialEntity {
 		}
 	}
 
+	tickModifiers(): void {
+		const modifierInstances = [...this.modifiers.modifiers];
+
+		for (const modifier of modifierInstances) {
+			modifier.update(this);
+
+			if (modifier.hasExpired(this)) {
+				this.modifiers.remove(modifier);
+			}
+		}
+	}
+
 	reevaluateSocialRules(): void {
 		// Check all the target's incoming relationship modifiers
 		for (const entry of this.owner.relationshipModifiers.modifiers) {
 			if (entry instanceof RelationshipModifier) {
 				if (entry.direction != "incoming") continue;
 
-				//  Remove all effects and remove them from the collection.
-				for (const modifier of this.modifiers.modifiers) {
-					if (modifier.source == entry) {
-						modifier.remove(this);
-					}
+				for (const effect of entry.effects) {
+					effect.remove(this);
 				}
-				this.modifiers.removeAllFromSource(entry);
 
-				// check if the modifier is valid
 				const isValid = entry.checkPreconditions(this);
 
-				// (2) Remove it if not (or don't add it)
 				if (isValid) {
-					for (const subModifier of entry.modifiers) {
-						const subModifierCopy = subModifier.copy();
-						subModifierCopy.source = entry;
-						this.modifiers.add(subModifierCopy);
-						subModifierCopy.apply(this);
+					for (const effect of entry.effects) {
+						effect.apply(this);
 					}
 				}
 			}
@@ -191,24 +178,14 @@ export class Relationship extends SocialEntity {
 			if (entry instanceof RelationshipModifier) {
 				if (entry.direction != "outgoing") continue;
 
-				//  Remove all effects and remove them from the collection.
-				for (const modifier of this.modifiers.modifiers) {
-					if (modifier.source == entry) {
-						modifier.remove(this);
-					}
+				for (const effect of entry.effects) {
+					effect.remove(this);
 				}
-				this.modifiers.removeAllFromSource(entry);
 
-				// check if the modifier is valid
 				const isValid = entry.checkPreconditions(this);
-
-				// (2) Remove it if not (or don't add it)
 				if (isValid) {
-					for (const subModifier of entry.modifiers) {
-						const subModifierCopy = subModifier.copy();
-						subModifierCopy.source = entry;
-						this.modifiers.add(subModifierCopy);
-						subModifierCopy.apply(this);
+					for (const effect of entry.effects) {
+						effect.apply(this);
 					}
 				}
 			}

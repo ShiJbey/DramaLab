@@ -89,10 +89,41 @@ export interface IEventEffectFactory {
 	createInstance(ctx: EventEffectContext, args: string[]): IEventEffect;
 }
 
-/** Effect applied and removed when a trait is applied to an entity. */
-export interface ITraitEffect {
+/** An effect applied directly to an entity */
+export interface IEffect {
 	/** Apply the effect's changes. */
 	apply(entity: SocialEntity): void;
 	/** Undo the effect's changes. */
 	remove(entity: SocialEntity): void;
+}
+
+/** Creates instances of effects. */
+export interface IEffectFactory {
+	/** Get the name of the effect this factory creates. */
+	get effectName(): string;
+	/** Create an instance of an effect. */
+	createInstance(...args: string[]): IEffect;
+}
+
+export class EffectLibrary {
+
+	private readonly _effectFactories: Map<string, IEffectFactory>;
+
+	constructor() {
+		this._effectFactories = new Map();
+	}
+
+	addEffectFactory(factory: IEffectFactory): void {
+		this._effectFactories.set(factory.effectName, factory);
+	}
+
+	getEffectFactory(effectName: string): IEffectFactory {
+		const factory = this._effectFactories.get(effectName);
+
+		if (factory === undefined) {
+			throw new Error(`No trait effect factory found for: ${effectName}`);
+		}
+
+		return factory;
+	}
 }

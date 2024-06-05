@@ -1,21 +1,22 @@
+import { IEffect } from "./Effect";
 import { IModifier } from "./Modifiers";
 
 export class SocialRule {
 	public readonly ruleId: string;
 	public readonly description: string;
 	public readonly preconditions: string[];
-	public readonly modifiers: IModifier[];
+	public readonly effects: IEffect[];
 
 	constructor(
 		ruleId: string,
 		description: string,
 		preconditions: string[],
-		modifiers: IModifier[]
+		effects: IEffect[]
 	) {
 		this.ruleId = ruleId;
 		this.description = description;
 		this.preconditions = preconditions;
-		this.modifiers = modifiers;
+		this.effects = effects;
 	}
 }
 

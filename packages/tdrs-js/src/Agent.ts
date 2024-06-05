@@ -1,5 +1,5 @@
 import { SocialEntity } from "./ISocialEntity";
-import { Modifier, RelationshipModifier, ModifierCollection } from "./Modifiers";
+import { ModifierCollection } from "./Modifiers";
 import { Relationship } from "./Relationship";
 import { SocialEngine } from "./SocialEngine";
 import { StatSchema } from "./Stats";
@@ -38,7 +38,7 @@ export class Agent extends SocialEntity {
 		this.agentType = agentType;
 		this.incomingRelationships = new Map();
 		this.outgoingRelationships = new Map();
-		this.relationshipModifiers = new ModifierCollection();
+		this.relationshipModifiers = new ModifierCollection(this);
 	}
 
 	addTrait(traitId: string, duration = -1, descriptionOverride = ""): boolean {
@@ -61,19 +61,8 @@ export class Agent extends SocialEntity {
 
 		this.traits.addTrait(trait, description, duration);
 
-		for (const modifier of trait.modifiers) {
-			if (modifier instanceof Modifier) {
-				const modifierCopy = modifier.copy();
-				modifierCopy.source = trait;
-				this.modifiers.add(modifierCopy);
-				modifierCopy.apply(this);
-			}
-			else if (modifier instanceof RelationshipModifier) {
-				this.relationshipModifiers.add(modifier.copy());
-			}
-			else {
-				throw new Error(`Unhandled modifier type: ${typeof modifier}`)
-			}
+		for (const effect of trait.effects) {
+			effect.apply(this);
 		}
 
 		this.engine.db.insert(`${this.uid}.traits.${traitId}`);
@@ -92,15 +81,11 @@ export class Agent extends SocialEntity {
 
 		this.traits.removeTrait(traitId);
 
-		this.engine.db.delete(`${this.uid}.traits.${traitId}`);
-
-		for (const modifier of this.modifiers.modifiers) {
-			if (modifier.source == trait) {
-				modifier.remove(this);
-			}
+		for (const effect of trait.effects) {
+			effect.remove(this);
 		}
 
-		this.modifiers.removeAllFromSource(this);
+		this.engine.db.delete(`${this.uid}.traits.${traitId}`);
 
 		this._onTraitRemoved.next({ trait: trait });
 
@@ -111,13 +96,23 @@ export class Agent extends SocialEntity {
 
 	tick(): void {
 		this.tickTraits();
-		this.reevaluateRelationships();
+		this.tickModifiers();
 	}
 
 	tickModifiers(): void {
 		const modifierInstances = [...this.modifiers.modifiers];
 
 		for (const modifier of modifierInstances) {
+			modifier.update(this);
+
+			if (modifier.hasExpired(this)) {
+				this.modifiers.remove(modifier);
+			}
+		}
+
+		const relModifierInstances = [...this.relationshipModifiers.modifiers];
+
+		for (const modifier of relModifierInstances) {
 			modifier.update(this);
 
 			if (modifier.hasExpired(this)) {

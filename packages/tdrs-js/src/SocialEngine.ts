@@ -1,5 +1,5 @@
 import { Agent, AgentSchema } from "./Agent";
-import { EventEffectContext, EventEffectLibrary } from "./Effect";
+import { EffectLibrary, EventEffectContext, EventEffectLibrary } from "./Effect";
 import { Relationship, RelationshipSchema } from "./Relationship";
 import { SocialEventLibrary } from "./SocialEvent";
 import { SocialRule, SocialRuleLibrary } from "./SocialRule";
@@ -10,8 +10,9 @@ import { RePraxisDatabase, DBQuery } from "@dramalab/repraxis-js";
 export class SocialEngine {
 	public readonly traitLibrary: TraitLibrary;
 	public readonly socialRules: SocialRuleLibrary;
-	public readonly effectLibrary: EventEffectLibrary;
 	public readonly socialEventLibrary: SocialEventLibrary;
+	public readonly effectLibrary: EffectLibrary;
+	public readonly eventEffectLibrary: EventEffectLibrary;
 	public readonly db: RePraxisDatabase;
 	public readonly agents: Map<string, Agent>;
 	public readonly relationships: Map<string, Map<string, Relationship>>;
@@ -22,8 +23,9 @@ export class SocialEngine {
 		this.traitLibrary = new TraitLibrary();
 		this.db = new RePraxisDatabase();
 		this.socialRules = new SocialRuleLibrary();
-		this.effectLibrary = new EventEffectLibrary();
 		this.socialEventLibrary = new SocialEventLibrary();
+		this.effectLibrary = new EffectLibrary();
+		this.eventEffectLibrary = new EventEffectLibrary();
 		this.agents = new Map();
 		this.relationships = new Map();
 		this.agentSchemas = new Map();
@@ -285,7 +287,7 @@ export class SocialEngine {
 
 				try {
 					const effects = response.effects.map((effectString: string) =>
-						this.effectLibrary.createInstance(scopedCtx, effectString)
+						this.eventEffectLibrary.createInstance(scopedCtx, effectString)
 					);
 
 					for (const effect of effects) {

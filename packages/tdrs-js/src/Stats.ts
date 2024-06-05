@@ -1,4 +1,6 @@
 import { Observable, Subject } from "rxjs";
+import { IModifier } from "./Modifiers";
+import { SocialEntity } from "./ISocialEntity";
 
 export class StatInitializer {
 	public readonly stat: string;
@@ -51,17 +53,20 @@ export class StatModifierData {
 	}
 }
 
-export class StatModifier {
+export class StatModifier implements IModifier {
 	public readonly stat: string;
 	public readonly value: number;
 	public readonly modifierType: StatModifierType;
 	public readonly order: number;
 	public readonly source: object | null;
+	public readonly hasDuration: boolean;
+	private _duration: number;
 
 	constructor(
 		stat: string,
 		value: number,
 		modifierType: StatModifierType,
+		duration = -1,
 		source: object | null = null,
 		order = -1,
 	) {
@@ -70,6 +75,38 @@ export class StatModifier {
 		this.modifierType = modifierType;
 		this.order = (order < 0) ? modifierType : order;
 		this.source = source;
+		this.hasDuration = duration > 0;
+		this._duration = duration;
+	}
+
+	hasExpired(entity: SocialEntity): boolean {
+		return this.hasDuration && this._duration <= 0;
+	}
+
+	apply(entity: SocialEntity): void {
+		entity.stats.getStat(this.stat).addModifier(this)
+	}
+
+	remove(entity: SocialEntity): void {
+		entity.stats.getStat(this.stat).removeModifier(this);
+	}
+
+	update(entity: SocialEntity): void {
+		if (this.hasDuration) {
+			this._duration -= 1;
+		}
+	}
+
+	get description(): string {
+		if (this.modifierType == StatModifierType.FLAT) {
+			return `Add ${this.value} to ${this.stat}`
+		}
+		else if (this.modifierType == StatModifierType.PERCENT_ADD) {
+			return `Add ${this.value * 100}% to ${this.stat}`
+		}
+		else {
+			return `Scales ${this.stat} to ${this.value * 100}%`
+		}
 	}
 }
 
